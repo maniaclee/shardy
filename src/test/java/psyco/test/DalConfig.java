@@ -3,8 +3,12 @@ package psyco.test;
 import com.alibaba.druid.filter.Filter;
 import com.alibaba.druid.filter.stat.StatFilter;
 import com.alibaba.druid.pool.DruidDataSource;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.aop.aspectj.AspectJExpressionPointcut;
+import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.beans.factory.annotation.Autowire;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,5 +80,22 @@ public class DalConfig {
     @Bean(autowire = Autowire.BY_NAME)
     public TransactionTemplate transactionTemplate() {
         return new TransactionTemplate();
+    }
+
+    @Bean
+    public DefaultPointcutAdvisor programAspect() {
+        DefaultPointcutAdvisor re = new DefaultPointcutAdvisor();
+        AspectJExpressionPointcut aspectJExpressionPointcut = new AspectJExpressionPointcut();
+//        aspectJExpressionPointcut.setExpression("execution(* org.apache.ibatis.executor.BaseExecutor.*(..))");
+        aspectJExpressionPointcut.setExpression("execution(* psyco.test.dal.mapper..*.*(..))");
+        re.setPointcut(aspectJExpressionPointcut);
+
+        re.setAdvice(new MethodInterceptor() {
+            public Object invoke(MethodInvocation methodInvocation) throws Throwable {
+                System.out.println("fuck!!!!" + methodInvocation.getMethod().getName());
+                return methodInvocation.proceed();
+            }
+        });
+        return re;
     }
 }

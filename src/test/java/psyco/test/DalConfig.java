@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
+import psyco.shardy.ShardSqlSessionFactoryBean;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class DalConfig {
 
     @Bean(autowire = Autowire.BY_NAME)
     public SqlSessionFactoryBean sqlSessionFactory() {
-        SqlSessionFactoryBean ssfb = new SqlSessionFactoryBean();
+        SqlSessionFactoryBean ssfb = new ShardSqlSessionFactoryBean();
         ssfb.setTypeAliasesPackage("psyco.test.dal.entity");
         return ssfb;
     }

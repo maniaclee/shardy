@@ -5,6 +5,7 @@ import com.alibaba.druid.filter.stat.StatFilter;
 import com.alibaba.druid.pool.DruidDataSource;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.apache.ibatis.plugin.Interceptor;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.aop.aspectj.AspectJExpressionPointcut;
@@ -17,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
-import psyco.shardy.ShardSqlSessionFactoryBean;
+import psyco.shardy.ExamplePlugin;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -35,8 +36,9 @@ public class DalConfig {
 
     @Bean(autowire = Autowire.BY_NAME)
     public SqlSessionFactoryBean sqlSessionFactory() {
-        SqlSessionFactoryBean ssfb = new ShardSqlSessionFactoryBean();
+        SqlSessionFactoryBean ssfb = new SqlSessionFactoryBean();
         ssfb.setTypeAliasesPackage("psyco.test.dal.entity");
+        ssfb.setPlugins(new Interceptor[]{new ExamplePlugin()});
         return ssfb;
     }
 

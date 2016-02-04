@@ -3,6 +3,7 @@ package psyco.test;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.alibaba.druid.util.JdbcUtils;
@@ -20,7 +21,7 @@ public class ParseTestMy {
     public static void main(String[] args) {
 
         //        String sql = "select * from TableA a where id < ? and a = 3";
-        String sql = "update TableA set col = ?   where id < ? and a = 3";
+        String sql = "update TableA set col = ?   where id < ? and a = 3 or b < ?";
 
         StringBuffer select = new StringBuffer();
         StringBuffer from = new StringBuffer();
@@ -71,6 +72,10 @@ public class ParseTestMy {
         }
         SQLExpr where1 = SqlParser.getWhere(sqlStatement);
         System.out.println(where1.getClass());
+        if(where1 instanceof SQLBinaryOpExpr){
+            System.out.println(SqlParser.getColsFromWhere(where1));
+
+        }
 
     }
 

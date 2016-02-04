@@ -2,13 +2,16 @@ package psyco.test;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.util.JdbcUtils;
+import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Created by lipeng on 16/2/4.
@@ -72,5 +75,30 @@ public class SqlParser {
         }
         return null;
     }
+
+    public static List<String> getColsFromWhere(SQLExpr where) {
+        List<String> re = Lists.newLinkedList();
+        flatSqlExpr(where, sqlExpr -> {
+            if (sqlExpr instanceof SQLIdentifierExpr)
+                re.add(sqlExpr.toString());
+        });
+        return re;
+    }
+
+    private static List<SQLExpr> flatSqlExprToList(SQLExpr sqlExpr) {
+        List<SQLExpr> result = Lists.newLinkedList();
+        flatSqlExpr(sqlExpr, sqlExpr1 -> result.add(sqlExpr1));
+        return result;
+    }
+
+    private static void flatSqlExpr(SQLExpr sqlExpr, Consumer<SQLExpr> re) {
+        if (sqlExpr instanceof SQLBinaryOpExpr) {
+            SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr) sqlExpr;
+            flatSqlExpr(binaryOpExpr.getLeft(), re);
+            flatSqlExpr(binaryOpExpr.getRight(), re);
+        } else
+            re.accept(sqlExpr);
+    }
+
 
 }

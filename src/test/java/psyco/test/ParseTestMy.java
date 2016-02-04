@@ -1,10 +1,9 @@
 package psyco.test;
 
 import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.statement.*;
-import com.alibaba.druid.sql.parser.SQLParserUtils;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.alibaba.druid.util.JdbcUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -28,8 +27,7 @@ public class ParseTestMy {
         StringBuffer where = new StringBuffer();
 
         // parser得到AST
-        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, JdbcUtils.MYSQL);
-        List<SQLStatement> stmtList = parser.parseStatementList(); //
+        List<SQLStatement> stmtList = SqlParser.parse(sql); //
 
         // 将AST通过visitor输出
         SQLASTOutputVisitor visitor = SQLUtils.createFormatOutputVisitor(from, stmtList, JdbcUtils.MYSQL);
@@ -37,6 +35,7 @@ public class ParseTestMy {
 
         List<SQLSelectItem> items = null;
 
+        SQLStatement sqlStatement  =  stmtList.get(0);
         for (SQLStatement stmt : stmtList) {
             // stmt.accept(visitor);
             if (stmt instanceof SQLSelectStatement) {
@@ -70,8 +69,12 @@ public class ParseTestMy {
                 System.out.println(((SQLInsertStatement) stmt).getTableName());
             }
         }
+        SQLExpr where1 = SqlParser.getWhere(sqlStatement);
+        System.out.println(where1.getClass());
 
     }
+
+
 
 
 

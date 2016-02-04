@@ -25,7 +25,16 @@ public class SqlParser {
         return re == null ? null : re.toString();
     }
 
-    public static SQLExpr getTableNameExpr(SQLStatement stmt) {
+    public static boolean setTableName(SQLStatement stmt, String tableName) {
+        SQLExpr re = getTableNameExpr(stmt);
+        if (re != null) {
+            setName(re, tableName);
+            return true;
+        }
+        return false;
+    }
+
+    private static SQLExpr getTableNameExpr(SQLStatement stmt) {
         if (stmt instanceof SQLSelectStatement) {
             SQLSelectStatement s = (SQLSelectStatement) stmt;
             SQLSelectQueryBlock query = (SQLSelectQueryBlock) s.getSelect().getQuery();
@@ -35,6 +44,8 @@ public class SqlParser {
             return ((SQLUpdateStatement) stmt).getTableName();
         } else if (stmt instanceof SQLInsertStatement) {
             return ((SQLInsertStatement) stmt).getTableName();
+        } else if (stmt instanceof SQLDeleteStatement) {
+            return ((SQLDeleteStatement) stmt).getTableName();
         }
         return null;
     }
@@ -43,12 +54,23 @@ public class SqlParser {
         ((SQLIdentifierExpr) SQLExpr).setName(name);
     }
 
-    public static boolean setTableName(SQLStatement stmt, String tableName) {
-        SQLExpr re = getTableNameExpr(stmt);
-        if (re != null) {
-            setName(re, tableName);
-            return true;
+    /***
+     * get where , except delete
+     *
+     * @param stmt
+     * @return
+     */
+    public static SQLExpr getWhere(SQLStatement stmt) {
+        if (stmt instanceof SQLSelectStatement) {
+            SQLSelectStatement s = (SQLSelectStatement) stmt;
+            SQLSelectQueryBlock query = (SQLSelectQueryBlock) s.getSelect().getQuery();
+            return query.getWhere();
+        } else if (stmt instanceof SQLUpdateStatement) {
+            return ((SQLUpdateStatement) stmt).getWhere();
+        } else if (stmt instanceof SQLDeleteStatement) {
+            return ((SQLDeleteStatement) stmt).getWhere();
         }
-        return false;
+        return null;
     }
+
 }

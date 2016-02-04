@@ -21,7 +21,8 @@ public class ParseTestMy {
 
     public static void main(String[] args) {
 
-        String sql = "select * from TableA a where id < ? and a = 3";
+        //        String sql = "select * from TableA a where id < ? and a = 3";
+        String sql = "update TableA set col = ?   where id < ? and a = 3";
 
         StringBuffer select = new StringBuffer();
         StringBuffer from = new StringBuffer();
@@ -46,26 +47,45 @@ public class ParseTestMy {
 
                 System.out.println(ToStringBuilder.reflectionToString(query.getFrom()));
                 SQLExprTableSource f = (SQLExprTableSource) query.getFrom();
-                setTableName(f,"shit");
+                setTableName(f, "shit");
                 System.out.println("tableName : " + getTableName(query.getFrom()));
 
                 query.getFrom().accept(visitor);
                 query.getWhere().accept(whereVisitor);
                 items = query.getSelectList();
                 System.out.println("select->" + sstmt);
+                for (SQLSelectItem s : items) {
+                    System.out.println(s.getAlias());
+                }
+
+                System.out.println("--------------------------------");
+
+                System.out.println("from==" + from.toString());
+                System.out.println("select==" + select);
+                System.out.println("where==" + where);
+            } else if (stmt instanceof SQLUpdateStatement) {
+                SQLUpdateStatement updateStatement = (SQLUpdateStatement) stmt;
+                System.out.println(updateStatement.getTableName());
+            } else if (stmt instanceof SQLInsertStatement) {
+                SQLInsertStatement sqlInsertStatement = (SQLInsertStatement) stmt;
+                System.out.println(((SQLInsertStatement) stmt).getTableName());
             }
         }
-        for (SQLSelectItem s : items) {
-            System.out.println(s.getAlias());
-        }
 
-        System.out.println("--------------------------------");
-
-        System.out.println("from==" + from.toString());
-        System.out.println("select==" + select);
-        System.out.println("where==" + where);
     }
 
+
+    public static String getTableName(SQLStatement stmt) {
+        if (stmt instanceof SQLSelectStatement) {
+        } else if (stmt instanceof SQLUpdateStatement) {
+            SQLUpdateStatement updateStatement = (SQLUpdateStatement) stmt;
+            System.out.println(updateStatement.getTableName());
+        } else if (stmt instanceof SQLInsertStatement) {
+            SQLInsertStatement sqlInsertStatement = (SQLInsertStatement) stmt;
+            System.out.println(((SQLInsertStatement) stmt).getTableName());
+        }
+        return null;
+    }
 
     public static String getTableName(SQLTableSource sqlTableSource) {
         if (sqlTableSource instanceof SQLExprTableSource)

@@ -1,9 +1,9 @@
 package psyco.test;
 
+import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
+import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.util.JdbcUtils;
@@ -20,19 +20,33 @@ public class SqlParser {
         return parser.parseStatementList();
     }
 
+    public static String getTableName(SQLStatement stmt) {
+        SQLExpr re = getTableNameExpr(stmt);
+        return re == null ? null : re.toString();
+    }
 
-
-    public static String getTableName(SQLTableSource sqlTableSource) {
-        if (sqlTableSource instanceof SQLExprTableSource)
-            return ((SQLExprTableSource) sqlTableSource).getExpr().toString();
+    public static SQLExpr getTableNameExpr(SQLStatement stmt) {
+        if (stmt instanceof SQLSelectStatement) {
+            SQLSelectStatement s = (SQLSelectStatement) stmt;
+            SQLSelectQueryBlock query = (SQLSelectQueryBlock) s.getSelect().getQuery();
+            SQLExprTableSource re = (SQLExprTableSource) query.getFrom();
+            return re.getExpr();
+        } else if (stmt instanceof SQLUpdateStatement) {
+            return ((SQLUpdateStatement) stmt).getTableName();
+        } else if (stmt instanceof SQLInsertStatement) {
+            return ((SQLInsertStatement) stmt).getTableName();
+        }
         return null;
     }
 
-    public static boolean setTableName(SQLTableSource sqlTableSource, String tableName) {
-        if (sqlTableSource instanceof SQLExprTableSource) {
-            SQLExprTableSource sqlExprTableSource = (SQLExprTableSource) sqlTableSource;
-            SQLIdentifierExpr expr = (SQLIdentifierExpr) sqlExprTableSource.getExpr();
-            expr.setName(tableName);
+    private static void setName(SQLExpr SQLExpr, String name) {
+        ((SQLIdentifierExpr) SQLExpr).setName(name);
+    }
+
+    public static boolean setTableName(SQLStatement stmt, String tableName) {
+        SQLExpr re = getTableNameExpr(stmt);
+        if (re != null) {
+            setName(re, tableName);
             return true;
         }
         return false;

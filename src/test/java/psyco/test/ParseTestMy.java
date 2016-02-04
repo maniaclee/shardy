@@ -2,7 +2,6 @@ package psyco.test;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -47,8 +46,8 @@ public class ParseTestMy {
 
                 System.out.println(ToStringBuilder.reflectionToString(query.getFrom()));
                 SQLExprTableSource f = (SQLExprTableSource) query.getFrom();
-                setTableName(f, "shit");
-                System.out.println("tableName : " + getTableName(query.getFrom()));
+                SqlParser.setTableName(stmt, "shit");
+                System.out.println("tableName : " + SqlParser.getTableName(stmt));
 
                 query.getFrom().accept(visitor);
                 query.getWhere().accept(whereVisitor);
@@ -65,7 +64,7 @@ public class ParseTestMy {
                 System.out.println("where==" + where);
             } else if (stmt instanceof SQLUpdateStatement) {
                 SQLUpdateStatement updateStatement = (SQLUpdateStatement) stmt;
-                System.out.println(updateStatement.getTableName());
+                System.out.println(SqlParser.getTableName(stmt));
             } else if (stmt instanceof SQLInsertStatement) {
                 SQLInsertStatement sqlInsertStatement = (SQLInsertStatement) stmt;
                 System.out.println(((SQLInsertStatement) stmt).getTableName());
@@ -75,31 +74,5 @@ public class ParseTestMy {
     }
 
 
-    public static String getTableName(SQLStatement stmt) {
-        if (stmt instanceof SQLSelectStatement) {
-        } else if (stmt instanceof SQLUpdateStatement) {
-            SQLUpdateStatement updateStatement = (SQLUpdateStatement) stmt;
-            System.out.println(updateStatement.getTableName());
-        } else if (stmt instanceof SQLInsertStatement) {
-            SQLInsertStatement sqlInsertStatement = (SQLInsertStatement) stmt;
-            System.out.println(((SQLInsertStatement) stmt).getTableName());
-        }
-        return null;
-    }
 
-    public static String getTableName(SQLTableSource sqlTableSource) {
-        if (sqlTableSource instanceof SQLExprTableSource)
-            return ((SQLExprTableSource) sqlTableSource).getExpr().toString();
-        return null;
-    }
-
-    public static boolean setTableName(SQLTableSource sqlTableSource, String tableName) {
-        if (sqlTableSource instanceof SQLExprTableSource) {
-            SQLExprTableSource sqlExprTableSource = (SQLExprTableSource) sqlTableSource;
-            SQLIdentifierExpr expr = (SQLIdentifierExpr) sqlExprTableSource.getExpr();
-            expr.setName(tableName);
-            return true;
-        }
-        return false;
-    }
 }

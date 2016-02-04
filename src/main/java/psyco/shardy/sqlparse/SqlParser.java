@@ -1,4 +1,4 @@
-package psyco.test;
+package psyco.shardy.sqlparse;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;

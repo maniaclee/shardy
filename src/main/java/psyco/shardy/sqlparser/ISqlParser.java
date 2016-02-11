@@ -1,4 +1,6 @@
-package psyco.shardy.sqlparse;
+package psyco.shardy.sqlparser;
+
+import psyco.shardy.SqlParseException;
 
 import java.util.List;
 
@@ -7,11 +9,13 @@ import java.util.List;
  */
 public interface ISqlParser {
 
+    void init(String sql) throws SqlParseException;
+
     String getTableName();
 
     SqlType getType();
 
-    List<String> getWhereColums();
+    List<String> getWhereColumns();
 
     boolean setTableName(String tableName);
 

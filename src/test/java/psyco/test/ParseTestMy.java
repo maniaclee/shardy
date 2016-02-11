@@ -8,7 +8,7 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.alibaba.druid.util.JdbcUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-import psyco.shardy.sqlparse.SqlParser;
+import psyco.shardy.sqlparser.DruidUtils;
 
 import java.util.List;
 
@@ -29,7 +29,7 @@ public class ParseTestMy {
         StringBuffer where = new StringBuffer();
 
         // parser得到AST
-        List<SQLStatement> stmtList = SqlParser.parse(sql); //
+        List<SQLStatement> stmtList = DruidUtils.parse(sql); //
 
         // 将AST通过visitor输出
         SQLASTOutputVisitor visitor = SQLUtils.createFormatOutputVisitor(from, stmtList, JdbcUtils.MYSQL);
@@ -47,8 +47,8 @@ public class ParseTestMy {
 
                 System.out.println(ToStringBuilder.reflectionToString(query.getFrom()));
                 SQLExprTableSource f = (SQLExprTableSource) query.getFrom();
-                SqlParser.setTableName(stmt, "shit");
-                System.out.println("tableName : " + SqlParser.getTableName(stmt));
+                DruidUtils.setTableName(stmt, "shit");
+                System.out.println("tableName : " + DruidUtils.getTableName(stmt));
 
                 query.getFrom().accept(visitor);
                 query.getWhere().accept(whereVisitor);
@@ -65,16 +65,16 @@ public class ParseTestMy {
                 System.out.println("where==" + where);
             } else if (stmt instanceof SQLUpdateStatement) {
                 SQLUpdateStatement updateStatement = (SQLUpdateStatement) stmt;
-                System.out.println(SqlParser.getTableName(stmt));
+                System.out.println(DruidUtils.getTableName(stmt));
             } else if (stmt instanceof SQLInsertStatement) {
                 SQLInsertStatement sqlInsertStatement = (SQLInsertStatement) stmt;
                 System.out.println(((SQLInsertStatement) stmt).getTableName());
             }
         }
-        SQLExpr where1 = SqlParser.getWhere(sqlStatement);
+        SQLExpr where1 = DruidUtils.getWhere(sqlStatement);
         System.out.println(where1.getClass());
         if(where1 instanceof SQLBinaryOpExpr){
-            System.out.println(SqlParser.getColsFromWhere(where1));
+            System.out.println(DruidUtils.getColsFromWhere(where1));
 
         }
 

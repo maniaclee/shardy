@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
-import psyco.shardy.ExamplePlugin;
+import psyco.shardy.interceptor.ShardInterceptor;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -38,7 +38,7 @@ public class DalConfig {
     public SqlSessionFactoryBean sqlSessionFactory() {
         SqlSessionFactoryBean ssfb = new SqlSessionFactoryBean();
         ssfb.setTypeAliasesPackage("psyco.test.dal.entity");
-        ssfb.setPlugins(new Interceptor[]{new ExamplePlugin()});
+        ssfb.setPlugins(new Interceptor[]{new ShardInterceptor()});
         return ssfb;
     }
 

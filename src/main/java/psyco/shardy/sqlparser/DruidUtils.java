@@ -1,4 +1,4 @@
-package psyco.shardy.sqlparse;
+package psyco.shardy.sqlparser;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 /**
  * Created by lipeng on 16/2/4.
  */
-public class SqlParser {
+public class DruidUtils {
 
     public static List<SQLStatement> parse(String sql) {
         SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, JdbcUtils.MYSQL);

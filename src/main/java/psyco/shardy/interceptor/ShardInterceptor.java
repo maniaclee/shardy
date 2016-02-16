@@ -10,6 +10,7 @@ import psyco.shardy.config.ShardConfig;
 import psyco.shardy.config.ShardContext;
 import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
+import psyco.shardy.datasource.DynamicDataSource;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
 import psyco.shardy.util.ProxyUtils;
@@ -50,6 +51,11 @@ public class ShardInterceptor implements Interceptor {
                     String sqlResult = iSqlParser.toSql();
                     System.out.println("sqlResult->" + sqlResult);
                     ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", sqlResult);
+                }
+
+                String db = re.getDbName();
+                if(StringUtils.isNoneBlank(db)){
+                    DynamicDataSource.setDb(db);
                 }
             }
         }

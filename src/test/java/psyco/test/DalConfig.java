@@ -18,7 +18,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
+import psyco.shardy.config.BucketShardStrategy;
+import psyco.shardy.config.TableConfig;
 import psyco.shardy.interceptor.ShardInterceptor;
+import psyco.shardy.spring.ShardyFactoryBean;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -34,11 +37,27 @@ import java.util.Properties;
 @PropertySource("application.properties")
 public class DalConfig {
 
-    @Bean(autowire = Autowire.BY_NAME)
-    public SqlSessionFactoryBean sqlSessionFactory() {
+
+    @Bean
+    public TableConfig User() {
+        TableConfig config = new TableConfig();
+        config.setTable("User");
+        config.setMasterColumn("id");
+        config.setShardStrategy(new BucketShardStrategy());
+        return config;
+    }
+
+    @Bean
+    public ShardyFactoryBean shardInterceptor() {
+        return new ShardyFactoryBean();
+    }
+
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactory(ShardInterceptor shardInterceptor,DruidDataSource dataSource) {
         SqlSessionFactoryBean ssfb = new SqlSessionFactoryBean();
         ssfb.setTypeAliasesPackage("psyco.test.dal.entity");
-        ssfb.setPlugins(new Interceptor[]{new ShardInterceptor()});
+        ssfb.setPlugins(new Interceptor[]{shardInterceptor});
+        ssfb.setDataSource(dataSource);
         return ssfb;
     }
 

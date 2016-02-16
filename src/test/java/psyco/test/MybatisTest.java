@@ -20,7 +20,7 @@ import java.util.Iterator;
 @SpringBootApplication
 @ComponentScan("psyco")
 @RunWith(SpringJUnit4ClassRunner.class)
-@EnableAutoConfiguration
+//@EnableAutoConfiguration
 @EnableAspectJAutoProxy
 @ContextConfiguration(classes = {MybatisTest.class})
 public class MybatisTest {

@@ -34,8 +34,6 @@ public class ShardInterceptor implements Interceptor {
         StatementHandler statementHandler = (StatementHandler) invocation.getTarget();
         BoundSql boundSql = statementHandler.getBoundSql();
         String sql = boundSql.getSql();
-        System.out.println(statementHandler.getClass());
-        System.out.println("sql->" + sql);
         ISqlParser iSqlParser = new DruidSqlParser();
         iSqlParser.init(sql);
 

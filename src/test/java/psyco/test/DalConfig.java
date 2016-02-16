@@ -63,7 +63,7 @@ public class DalConfig {
         druidDataSource.setTestOnReturn(false);
         druidDataSource.setPoolPreparedStatements(true);
         druidDataSource.setMaxPoolPreparedStatementPerConnectionSize(20);
-//        druidDataSource.setFilters("psyco/user/center/config");
+        //        druidDataSource.setFilters("psyco/user/center/config");
         Properties properties = new Properties();
         properties.put("config.decrypt", "true");
         druidDataSource.setConnectProperties(properties);
@@ -85,11 +85,11 @@ public class DalConfig {
         return new TransactionTemplate();
     }
 
-    @Bean
+    //    @Bean
     public DefaultPointcutAdvisor programAspect() {
         DefaultPointcutAdvisor re = new DefaultPointcutAdvisor();
         AspectJExpressionPointcut aspectJExpressionPointcut = new AspectJExpressionPointcut();
-//        aspectJExpressionPointcut.setExpression("execution(* org.apache.ibatis.executor.BaseExecutor.*(..))");
+        //        aspectJExpressionPointcut.setExpression("execution(* org.apache.ibatis.executor.BaseExecutor.*(..))");
         aspectJExpressionPointcut.setExpression("execution(* psyco.test.dal.mapper..*.*(..))");
         re.setPointcut(aspectJExpressionPointcut);
 

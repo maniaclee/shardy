@@ -15,6 +15,7 @@ import psyco.shardy.datasource.DynamicDataSource;
 import psyco.shardy.sqlparser.ColumnValue;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
+import psyco.shardy.sqlparser.SqlType;
 import psyco.shardy.util.ReflectionUtils;
 
 import java.sql.Connection;
@@ -63,6 +64,9 @@ public class ShardInterceptor implements Interceptor {
                 } else {
                     DynamicDataSource.setDbDefault();
                 }
+            }
+            if (iSqlParser.getType() == SqlType.INSERT) {
+                //TODO
             }
         }
 

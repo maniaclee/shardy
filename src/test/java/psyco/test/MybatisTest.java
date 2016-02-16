@@ -9,6 +9,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import psyco.test.dal.entity.User;
 import psyco.test.dal.mapper.DaoLayer;
 
 import javax.annotation.Resource;
@@ -32,6 +33,14 @@ public class MybatisTest {
     public void test() {
         print(daoLayer.find(10000001));
         print(daoLayer.find(32));
+    }
+
+    @Test
+    public void insert() {
+        User user = new User();
+        user.setId(10000000 + 2);
+        user.setName("test");
+        daoLayer.insert(user);
     }
 
     private void print(Object p) {

@@ -1,7 +1,10 @@
 package psyco.shardy.sqlparser;
 
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.*;
+import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
+import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
 import psyco.shardy.SqlParseException;
 
 import java.util.List;
@@ -41,12 +44,17 @@ public class DruidSqlParser implements ISqlParser {
 
     @Override
     public List<String> getWhereColumns() {
-        return DruidUtils.getColsFromWhere(DruidUtils.getWhere(sqlStatement));
+        return DruidUtils.getColNamesFromWhere(DruidUtils.getWhere(sqlStatement));
     }
 
     @Override
     public boolean setTableName(String tableName) {
         return DruidUtils.setTableName(sqlStatement, tableName);
+    }
+
+    @Override
+    public List<ColumnValue> getcolumns() {
+        return DruidUtils.getColumns(sqlStatement);
     }
 
     @Override

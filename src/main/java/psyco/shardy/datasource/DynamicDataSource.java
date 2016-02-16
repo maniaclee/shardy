@@ -15,11 +15,16 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
     }
 
     public DynamicDataSource(String defaultDb) {
-        if(defaultDb!=null)
+        if (defaultDb != null)
             throw new RuntimeException("DEFAULT_DB is already defined as : " + DEFAULT_DB);
         DEFAULT_DB = defaultDb;
     }
 
+
+    public static void setDbDefault() {
+        if (DEFAULT_DB != null)
+            setDb(DEFAULT_DB);
+    }
 
     @Override
     protected Object determineCurrentLookupKey() {

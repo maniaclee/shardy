@@ -3,6 +3,7 @@ package psyco.shardy.sqlparser;
 import psyco.shardy.SqlParseException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by lipeng on 16/2/4.
@@ -18,6 +19,8 @@ public interface ISqlParser {
     List<String> getWhereColumns();
 
     boolean setTableName(String tableName);
+
+    List<ColumnValue> getcolumns();
 
     String toSql();
 

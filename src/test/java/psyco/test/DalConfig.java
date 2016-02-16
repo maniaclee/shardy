@@ -21,7 +21,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import psyco.shardy.config.BucketShardStrategy;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.interceptor.ShardInterceptor;
-import psyco.shardy.spring.ShardyFactoryBean;
+import psyco.shardy.spring.ShardInterceptorFactoryBean;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -48,8 +48,8 @@ public class DalConfig {
     }
 
     @Bean
-    public ShardyFactoryBean shardInterceptor() {
-        return new ShardyFactoryBean();
+    public ShardInterceptorFactoryBean shardInterceptor() {
+        return new ShardInterceptorFactoryBean();
     }
 
     @Bean

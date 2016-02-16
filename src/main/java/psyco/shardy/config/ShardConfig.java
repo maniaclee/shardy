@@ -2,6 +2,7 @@ package psyco.shardy.config;
 
 import com.google.common.collect.Maps;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
@@ -10,7 +11,12 @@ import java.util.Map;
 public class ShardConfig {
     public static Map<String, TableConfig> tableConfigs = Maps.newHashMap();
 
-    public static TableConfig getTableConfig(String table){
+    public static TableConfig getTableConfig(String table) {
         return tableConfigs.get(table);
+    }
+
+    public static void init(Collection<TableConfig> tableConfigs) {
+        for (TableConfig t : tableConfigs)
+            ShardConfig.tableConfigs.put(t.getTable(), t);
     }
 }

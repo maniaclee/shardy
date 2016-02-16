@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * Created by lipeng on 16/2/16.
  */
-public class ShardyFactoryBean implements FactoryBean<ShardInterceptor>, ApplicationListener<ContextRefreshedEvent> {
+public class ShardInterceptorFactoryBean implements FactoryBean<ShardInterceptor>, ApplicationListener<ContextRefreshedEvent> {
     @Override
     public ShardInterceptor getObject() throws Exception {
         return new ShardInterceptor();
@@ -38,6 +38,7 @@ public class ShardyFactoryBean implements FactoryBean<ShardInterceptor>, Applica
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
         ApplicationContext context = event.getApplicationContext();
+
         try {
             installPlugin(context);
         } catch (Exception e) {
@@ -45,10 +46,8 @@ public class ShardyFactoryBean implements FactoryBean<ShardInterceptor>, Applica
             throw new RuntimeException(e);
         }
         Map<String, TableConfig> beans = context.getBeansOfType(TableConfig.class);
-        for (TableConfig t : beans.values()) {
-            ShardConfig.tableConfigs.put(t.getTable(), t);
-            System.out.println("register tableConfig - > " + t.getTable());
-        }
+        if (beans != null)
+            ShardConfig.init(beans.values());
     }
 
     private void installPlugin(ApplicationContext context) throws NoSuchFieldException, IllegalAccessException {

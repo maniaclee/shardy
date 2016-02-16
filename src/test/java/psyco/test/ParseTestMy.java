@@ -74,7 +74,7 @@ public class ParseTestMy {
         SQLExpr where1 = DruidUtils.getWhere(sqlStatement);
         System.out.println(where1.getClass());
         if(where1 instanceof SQLBinaryOpExpr){
-            System.out.println(DruidUtils.getColsFromWhere(where1));
+            System.out.println(DruidUtils.getColNamesFromWhere(where1));
 
         }
 

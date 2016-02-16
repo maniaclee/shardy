@@ -30,7 +30,7 @@ public class MybatisTest {
 
     @Test
     public void test() {
-        print(daoLayer.find(32));
+        print(daoLayer.find(10000001));
         print(daoLayer.find(32));
     }
 

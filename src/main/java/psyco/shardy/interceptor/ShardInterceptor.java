@@ -6,19 +6,22 @@ import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.logging.jdbc.PreparedStatementLogger;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.plugin.*;
+import psyco.shardy.SqlParseException;
 import psyco.shardy.config.ShardConfig;
 import psyco.shardy.config.ShardContext;
 import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
+import psyco.shardy.sqlparser.ColumnValue;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
-import psyco.shardy.util.ProxyUtils;
 import psyco.shardy.util.ReflectionUtils;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
@@ -42,8 +45,9 @@ public class ShardInterceptor implements Interceptor {
         TableConfig tableConfig = ShardConfig.getTableConfig(table);
         if (tableConfig != null) {
             if (boundSql.getParameterObject() instanceof MapperMethod.ParamMap) {
-                MapperMethod.ParamMap paramMap = (MapperMethod.ParamMap) boundSql.getParameterObject();
-                Object masterValue = paramMap.get(tableConfig.getMasterColumn());
+                Object masterValue = getColumnValue(tableConfig.getMasterColumn(), iSqlParser, boundSql);
+                if (masterValue == null)
+                    throw new SqlParseException("no master value is found:" + sql);
                 ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
                 String destTable = re.getTableName();
                 if (StringUtils.isNotBlank(destTable)) {
@@ -54,13 +58,31 @@ public class ShardInterceptor implements Interceptor {
                 }
 
                 String db = re.getDbName();
-                if(StringUtils.isNoneBlank(db)){
+                if (StringUtils.isNoneBlank(db)) {
                     DynamicDataSource.setDb(db);
+                } else {
+                    DynamicDataSource.setDbDefault();
                 }
             }
         }
 
         return invocation.proceed();
+    }
+
+    private Object getColumnValue(String columnName, ISqlParser iSqlParser, BoundSql boundSql) {
+        MapperMethod.ParamMap paramMap = (MapperMethod.ParamMap) boundSql.getParameterObject();
+        List<ColumnValue> cols = iSqlParser.getcolumns();
+        for (int i = 0; i < cols.size(); i++) {
+            if (Objects.equals(cols.get(i).column, columnName)) {
+                //                if (cols.get(i).value.equals("?")) //TODO
+                return paramMap.get(boundSql.getParameterMappings().get(i).getProperty());
+            }
+        }
+        return null;
+    }
+
+    public void init(Collection<TableConfig> tableConfigs) {
+        ShardConfig.init(tableConfigs);
     }
 
     public Object interceptQuery(Invocation invocation) throws Throwable {
@@ -96,16 +118,6 @@ public class ShardInterceptor implements Interceptor {
         System.out.println("sta-> " + statementHandler);
         return invocation.proceed();
     }
-
-    private Statement proxyStatement(Statement statement) {
-        return ProxyUtils.proxyMethodInterceptor(statement, invocation -> invocation.proceed());
-    }
-
-
-    private Object getColumnValue(BoundSql sql, String col) {
-        return sql.getParameterMappings().stream().filter(parameterMapping -> Objects.equals(parameterMapping.getProperty(), col)).findFirst().orElse(null);
-    }
-
 
     public Object plugin(Object target) {
         return Plugin.wrap(target, this);

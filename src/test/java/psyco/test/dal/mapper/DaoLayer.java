@@ -12,13 +12,13 @@ import java.util.List;
  */
 public interface DaoLayer {
 
-    @Select("select * from User where id < #{id}")
-    List<User> find(@Param("id")long id);
+    @Select("select * from User where id < #{idVar}")
+    List<User> find(@Param("idVar")long id);
 
     @Select("select * from User where name = #{name} ")
     List<User> findByName(@Param("name") String name);
 
-    @Update("update User set level = #{level} where id = #{id}")
-    int updateLevelById(@Param("id") long id, @Param("level") Integer level);
+    @Update("update User set level = #{level} where id = #{idVar}")
+    int updateLevelById(@Param("idVar") long id, @Param("level") Integer level);
 
 }

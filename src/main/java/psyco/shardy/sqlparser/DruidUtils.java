@@ -44,7 +44,7 @@ public class DruidUtils {
             SQLSelectStatement s = (SQLSelectStatement) stmt;
             SQLSelectQueryBlock query = (SQLSelectQueryBlock) s.getSelect().getQuery();
             SQLExprTableSource re = (SQLExprTableSource) query.getFrom();
-            return re.getExpr();
+            return re == null ? null : re.getExpr();
         } else if (stmt instanceof SQLUpdateStatement) {
             return ((SQLUpdateStatement) stmt).getTableName();
         } else if (stmt instanceof SQLInsertStatement) {

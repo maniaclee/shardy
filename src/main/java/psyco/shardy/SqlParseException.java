@@ -7,4 +7,8 @@ public class SqlParseException extends Exception {
     public SqlParseException(String message) {
         super(message);
     }
+
+    public SqlParseException(Throwable cause) {
+        super(cause);
+    }
 }

@@ -40,37 +40,63 @@ public class ShardInterceptor implements Interceptor {
         BoundSql boundSql = statementHandler.getBoundSql();
         String sql = boundSql.getSql();
         ISqlParser iSqlParser = new DruidSqlParser();
-        iSqlParser.init(sql);
+        try {
+            iSqlParser.init(sql);
+        } catch (Exception e) {
+            e.printStackTrace();
+            /** let go of the unknown sql */
+            return invocation.proceed();
+        }
 
         String table = iSqlParser.getTableName();
+        /** if no table found , let go , maybe some wired but legal sql or mybatis sql like "select #{id}" in SelectKey */
+        if(StringUtils.isBlank(table))
+            return invocation.proceed();
         TableConfig tableConfig = ShardConfig.getTableConfig(table);
         if (tableConfig != null) {
-            if (boundSql.getParameterObject() instanceof MapperMethod.ParamMap) {
-                Object masterValue = getColumnValue(tableConfig.getMasterColumn(), iSqlParser, boundSql);
-                if (masterValue == null)
-                    throw new SqlParseException("no master value is found:" + sql);
-                ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
-                String destTable = re.getTableName();
-                if (StringUtils.isNotBlank(destTable)) {
-                    iSqlParser.setTableName(re.getTableName());
-                    String sqlResult = iSqlParser.toSql();
-                    System.out.println("sqlResult->" + sqlResult);
-                    ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", sqlResult);
-                }
-
-                String db = re.getDbName();
-                if (StringUtils.isNoneBlank(db)) {
-                    DynamicDataSource.setDb(db);
-                } else {
-                    DynamicDataSource.setDbDefault();
-                }
+            Object masterValue = findMasterValue(iSqlParser, boundSql, tableConfig);
+            if (masterValue == null)
+                throw new SqlParseException("no master value is found:" + sql);
+            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
+            String destTable = re.getTableName();
+            if (StringUtils.isNotBlank(destTable)) {
+                iSqlParser.setTableName(re.getTableName());
+                String sqlResult = iSqlParser.toSql();
+                System.out.println("sqlResult->" + sqlResult);
+                ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", sqlResult);
             }
-            if (iSqlParser.getType() == SqlType.INSERT) {
-                //TODO
+
+            String db = re.getDbName();
+            if (StringUtils.isNoneBlank(db)) {
+                DynamicDataSource.setDb(db);
+            } else {
+                DynamicDataSource.setDbDefault();
             }
         }
 
         return invocation.proceed();
+    }
+
+    private Object findMasterValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) throws SqlParseException {
+        if (iSqlParser.getType() == SqlType.INSERT) {
+            /** Insert */
+            List<ColumnValue> columnValues = iSqlParser.getcolumns();
+            for (int i = 0; i < columnValues.size(); i++) {
+                if (columnValues.get(i).column.equals(tableConfig.getMasterColumn())) {
+                    try {
+                        return ReflectionUtils.getFieldValue(boundSql.getParameterObject(), boundSql.getParameterMappings().get(i).getProperty());
+                    } catch (Exception e) {
+                        throw new SqlParseException("failed to parse property:" + boundSql.getParameterMappings().get(i).getProperty());
+                    }
+                }
+            }
+        } else {
+            /** Select/Update/Delete -> columns from "where" clause */
+            if (boundSql.getParameterObject() instanceof MapperMethod.ParamMap) {
+                return getColumnValue(tableConfig.getMasterColumn(), iSqlParser, boundSql);
+            }
+        }
+        return null;
     }
 
     private Object getColumnValue(String columnName, ISqlParser iSqlParser, BoundSql boundSql) {

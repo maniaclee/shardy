@@ -40,6 +40,10 @@ public class ExtendedSqlSource implements SqlSource {
         return boundSql;
     }
 
+    public BoundSql getBoundSqlRaw(Object parameterObject) {
+        return sqlSource.getBoundSql(parameterObject);
+    }
+
     private void changeSql(BoundSql boundSql) {
         String sql = boundSql.getSql();
         ISqlParser iSqlParser = new DruidSqlParser();

@@ -19,6 +19,7 @@ import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
 import psyco.shardy.mybatis.ExtendedSqlSource;
+import psyco.shardy.shard.TableMapping;
 import psyco.shardy.sqlparser.ColumnValue;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
@@ -43,7 +44,12 @@ public class ShardExecutorInterceptor implements Interceptor {
     public Object intercept(Invocation invocation) throws Throwable {
         Object[] args = invocation.getArgs();
         MappedStatement mappedStatement = (MappedStatement) args[0];
+        Object arg = args[1];
+        /** init MappedStatement */
         updateMappedStatement(mappedStatement);
+        /** lazy init table mapping & get */
+        String table = TableMapping.getTableName(mappedStatement, arg);
+        System.out.println("tablename->" + table);
         return invocation.proceed();
     }
 

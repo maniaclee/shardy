@@ -18,6 +18,7 @@ import psyco.shardy.config.ShardContext;
 import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
+import psyco.shardy.mybatis.ExtendedSqlSource;
 import psyco.shardy.sqlparser.ColumnValue;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
@@ -34,12 +35,19 @@ import java.util.Properties;
 @Intercepts({
         //        @Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class}),
         //        @Signature(type = StatementHandler.class, method = "query", args = {Statement.class, ResultHandler.class}),
-        //                @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
+        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
         @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})
 })
 public class ShardExecutorInterceptor implements Interceptor {
 
     public Object intercept(Invocation invocation) throws Throwable {
+        Object[] args = invocation.getArgs();
+        MappedStatement mappedStatement = (MappedStatement) args[0];
+        updateMappedStatement(mappedStatement);
+        return invocation.proceed();
+    }
+
+    public Object interceptOld(Invocation invocation) throws Throwable {
         Object[] args = invocation.getArgs();
         MappedStatement mappedStatement = (MappedStatement) args[0];
         Object arg = args[1];
@@ -82,6 +90,13 @@ public class ShardExecutorInterceptor implements Interceptor {
         }
 
         return invocation.proceed();
+    }
+
+
+    private void updateMappedStatement(MappedStatement mappedStatement) throws NoSuchFieldException {
+        if (mappedStatement.getSqlSource() instanceof ExtendedSqlSource)
+            return;
+        ReflectionUtils.setDeclaredFieldValue(mappedStatement, "sqlSource", ExtendedSqlSource.instance(mappedStatement));
     }
 
     private void changeSql(BoundSql boundSql, String sql) throws NoSuchFieldException {

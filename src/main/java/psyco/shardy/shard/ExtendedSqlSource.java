@@ -1,4 +1,4 @@
-package psyco.shardy.mybatis;
+package psyco.shardy.shard;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.binding.MapperMethod;
@@ -14,7 +14,6 @@ import psyco.shardy.datasource.DynamicDataSource;
 import psyco.shardy.sqlparser.ColumnValue;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
-import psyco.shardy.sqlparser.SqlType;
 import psyco.shardy.util.ReflectionUtils;
 
 import java.util.List;
@@ -36,8 +35,17 @@ public class ExtendedSqlSource implements SqlSource {
     @Override
     public BoundSql getBoundSql(Object parameterObject) {
         BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
-        changeSql(boundSql);
+//        changeSql(boundSql);
+        try {
+            ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", Transfer.getSqlShard());
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
         return boundSql;
+    }
+
+    public BoundSql buildBoundSql(Object parameterObject) {
+        return sqlSource.getBoundSql(parameterObject);
     }
 
     public BoundSql getBoundSqlRaw(Object parameterObject) {
@@ -46,14 +54,7 @@ public class ExtendedSqlSource implements SqlSource {
 
     private void changeSql(BoundSql boundSql) {
         String sql = boundSql.getSql();
-        ISqlParser iSqlParser = new DruidSqlParser();
-        try {
-            iSqlParser.init(sql);
-        } catch (Exception e) {
-            e.printStackTrace();
-            /** let go of the unknown sql */
-            return;
-        }
+        ISqlParser iSqlParser = createISqlParser(sql);
 
         String table = iSqlParser.getTableName();
         /** if no table found , let go , maybe some wired but legal sql or mybatis sql like "select #{id}" in SelectKey */
@@ -64,6 +65,13 @@ public class ExtendedSqlSource implements SqlSource {
             Object masterValue = findMasterValue(iSqlParser, boundSql, tableConfig);
             if (masterValue == null)
                 throw new SqlParseException("no master value is found:" + sql);
+            if (masterValue instanceof List) {
+                List masters = (List) masterValue;
+                if (masters.isEmpty())
+                    return;
+                /** only select first to route table & all the master values must be in the SAME table */
+                masterValue = masters.get(0);
+            }
             ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
             String destTable = re.getTableName();
             if (StringUtils.isNotBlank(destTable)) {
@@ -86,9 +94,22 @@ public class ExtendedSqlSource implements SqlSource {
         }
     }
 
-    private Object findMasterValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) {
-        if (iSqlParser.getType() == SqlType.INSERT) {
-            /** Insert */
+    public static ISqlParser createISqlParser(String sql) {
+        ISqlParser iSqlParser = new DruidSqlParser();
+        try {
+            iSqlParser.init(sql);
+            return iSqlParser;
+        } catch (Exception e) {
+            throw new SqlParseException("error parsing sql:" + sql);
+        }
+    }
+
+    public static Object findMasterValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) {
+        /** Select/Update/Delete -> columns from "where" clause */
+        if (boundSql.getParameterObject() instanceof MapperMethod.ParamMap) {
+            return getColumnValue(tableConfig.getMasterColumn(), iSqlParser, boundSql);
+        } else {
+            /** parameter is object */
             List<ColumnValue> columnValues = iSqlParser.getcolumns();
             for (int i = 0; i < columnValues.size(); i++) {
                 if (columnValues.get(i).column.equals(tableConfig.getMasterColumn())) {
@@ -99,24 +120,21 @@ public class ExtendedSqlSource implements SqlSource {
                     }
                 }
             }
-        } else {
-            /** Select/Update/Delete -> columns from "where" clause */
-            if (boundSql.getParameterObject() instanceof MapperMethod.ParamMap) {
-                return getColumnValue(tableConfig.getMasterColumn(), iSqlParser, boundSql);
-            }
         }
         return null;
     }
 
-    private Object getColumnValue(String columnName, ISqlParser iSqlParser, BoundSql boundSql) {
+    public static Object getColumnValue(String columnName, ISqlParser iSqlParser, BoundSql boundSql) {
         MapperMethod.ParamMap paramMap = (MapperMethod.ParamMap) boundSql.getParameterObject();
         List<ColumnValue> cols = iSqlParser.getcolumns();
         for (int i = 0; i < cols.size(); i++) {
             if (Objects.equals(cols.get(i).column, columnName)) {
                 //                if (cols.get(i).value.equals("?")) //TODO
-                return paramMap.get(boundSql.getParameterMappings().get(i).getProperty());
+
+                return paramMap.get("param" + i);
             }
         }
         return null;
     }
+
 }

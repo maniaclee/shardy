@@ -1,5 +1,8 @@
 package psyco.shardy.interceptor;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.binding.MapperMethod;
 import org.apache.ibatis.builder.StaticSqlSource;
@@ -18,12 +21,10 @@ import psyco.shardy.config.ShardContext;
 import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
-import psyco.shardy.mybatis.ExtendedSqlSource;
-import psyco.shardy.shard.TableMapping;
-import psyco.shardy.sqlparser.ColumnValue;
+import psyco.shardy.shard.ExtendedSqlSource;
+import psyco.shardy.shard.Transfer;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
-import psyco.shardy.sqlparser.SqlType;
 import psyco.shardy.util.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -31,7 +32,6 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 
 @Intercepts({
@@ -46,7 +46,7 @@ public class ShardExecutorInterceptor implements Interceptor {
         Object[] args = invocation.getArgs();
         MappedStatement mappedStatement = (MappedStatement) args[0];
         Object arg = args[1];
-        
+
         /** init MappedStatement */
         updateMappedStatement(mappedStatement);
 
@@ -63,35 +63,10 @@ public class ShardExecutorInterceptor implements Interceptor {
     }
 
     private Object select(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
-        /** lazy init table mapping & get */
-        String table = TableMapping.getTableName(mappedStatement, arg);
-        System.out.println("tablename->" + table);
-        return invocation.proceed();
-    }
-
-    private Object insert(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
-        return invocation.proceed();
-    }
-
-    private Object update(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
-        return invocation.proceed();
-    }
-
-    public Object interceptOld(Invocation invocation) throws Throwable {
-        Object[] args = invocation.getArgs();
-        MappedStatement mappedStatement = (MappedStatement) args[0];
-        Object arg = args[1];
-        BoundSql boundSql = mappedStatement.getBoundSql(arg);
-        //        BoundSql boundSql = (BoundSql) args[args.length - 1];
+        ExtendedSqlSource extendedSqlSource = (ExtendedSqlSource) mappedStatement.getSqlSource();
+        BoundSql boundSql = extendedSqlSource.buildBoundSql(arg);
         String sql = boundSql.getSql();
-        ISqlParser iSqlParser = new DruidSqlParser();
-        try {
-            iSqlParser.init(sql);
-        } catch (Exception e) {
-            e.printStackTrace();
-            /** let go of the unknown sql */
-            return invocation.proceed();
-        }
+        ISqlParser iSqlParser = ExtendedSqlSource.createISqlParser(sql);
 
         String table = iSqlParser.getTableName();
         /** if no table found , let go , maybe some wired but legal sql or mybatis sql like "select #{id}" in SelectKey */
@@ -99,16 +74,34 @@ public class ShardExecutorInterceptor implements Interceptor {
             return invocation.proceed();
         TableConfig tableConfig = ShardConfig.getTableConfig(table);
         if (tableConfig != null) {
-            Object masterValue = findMasterValue(iSqlParser, boundSql, tableConfig);
+            Object masterValue = ExtendedSqlSource.findMasterValue(iSqlParser, boundSql, tableConfig);
             if (masterValue == null)
                 throw new SqlParseException("no master value is found:" + sql);
+            if (masterValue instanceof List) {
+                List masters = (List) masterValue;
+                if (masters.isEmpty())
+                    return invocation.proceed();
+                /** only select first to route table & all the master values must be in the SAME table */
+                Multimap<String, Object> shards = parseValueList(masters, tableConfig);
+                List re = Lists.newLinkedList();
+                for (String t : shards.keySet()) {
+                    iSqlParser.setTableName(t);
+                    //TODO
+                    String sqlResult = iSqlParser.toSql();
+                    Transfer.setSqlShard(sqlResult);
+                    List tmp = (List) invocation.proceed();
+                    if (tmp != null)
+                        re.addAll(tmp);
+                }
+                return re;
+            }
             ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
             String destTable = re.getTableName();
             if (StringUtils.isNotBlank(destTable)) {
                 iSqlParser.setTableName(re.getTableName());
                 String sqlResult = iSqlParser.toSql();
                 System.out.println("sqlResult->" + sqlResult);
-                changeSql(boundSql, sqlResult);
+                Transfer.setSqlShard(sqlResult);
             }
 
             String db = re.getDbName();
@@ -119,6 +112,69 @@ public class ShardExecutorInterceptor implements Interceptor {
             }
         }
 
+        /** lazy init table mapping & get */
+//        String table = TableMapping.getTableName(mappedStatement, arg);
+//        System.out.println("tablename->" + table);
+        return invocation.proceed();
+    }
+
+    private Multimap<String, Object> parseValueList(List masters, TableConfig config) {
+        Multimap<String, Object> myMultimap = ArrayListMultimap.create();
+        for (Object o : masters) {
+            ShardResult shardResult = config.getShardStrategy().indexTableByColumn(new ShardContext(o, config.getTable()));
+            if (StringUtils.isNoneBlank(shardResult.getTableName()))
+                myMultimap.put(shardResult.getTableName(), o);
+        }
+        return myMultimap;
+    }
+
+    private void changeSql(BoundSql boundSql) {
+        String sql = boundSql.getSql();
+        ISqlParser iSqlParser = ExtendedSqlSource.createISqlParser(sql);
+
+        String table = iSqlParser.getTableName();
+        /** if no table found , let go , maybe some wired but legal sql or mybatis sql like "select #{id}" in SelectKey */
+        if (StringUtils.isBlank(table))
+            return;
+        TableConfig tableConfig = ShardConfig.getTableConfig(table);
+        if (tableConfig != null) {
+            Object masterValue = ExtendedSqlSource.findMasterValue(iSqlParser, boundSql, tableConfig);
+            if (masterValue == null)
+                throw new SqlParseException("no master value is found:" + sql);
+            if (masterValue instanceof List) {
+                List masters = (List) masterValue;
+                if (masters.isEmpty())
+                    return;
+                /** only select first to route table & all the master values must be in the SAME table */
+                masterValue = masters.get(0);
+            }
+            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
+            String destTable = re.getTableName();
+            if (StringUtils.isNotBlank(destTable)) {
+                iSqlParser.setTableName(re.getTableName());
+                String sqlResult = iSqlParser.toSql();
+                System.out.println("sqlResult->" + sqlResult);
+                try {
+                    ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", sqlResult);
+                } catch (NoSuchFieldException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            String db = re.getDbName();
+            if (StringUtils.isNoneBlank(db)) {
+                DynamicDataSource.setDb(db);
+            } else {
+                DynamicDataSource.setDbDefault();
+            }
+        }
+    }
+
+    private Object insert(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
+        return invocation.proceed();
+    }
+
+    private Object update(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
         return invocation.proceed();
     }
 
@@ -141,39 +197,6 @@ public class ShardExecutorInterceptor implements Interceptor {
         }
     }
 
-    private Object findMasterValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) throws SqlParseException {
-        if (iSqlParser.getType() == SqlType.INSERT) {
-            /** Insert */
-            List<ColumnValue> columnValues = iSqlParser.getcolumns();
-            for (int i = 0; i < columnValues.size(); i++) {
-                if (columnValues.get(i).column.equals(tableConfig.getMasterColumn())) {
-                    try {
-                        return ReflectionUtils.getFieldValue(boundSql.getParameterObject(), boundSql.getParameterMappings().get(i).getProperty());
-                    } catch (Exception e) {
-                        throw new SqlParseException("failed to parse property:" + boundSql.getParameterMappings().get(i).getProperty());
-                    }
-                }
-            }
-        } else {
-            /** Select/Update/Delete -> columns from "where" clause */
-            if (boundSql.getParameterObject() instanceof MapperMethod.ParamMap) {
-                return getColumnValue(tableConfig.getMasterColumn(), iSqlParser, boundSql);
-            }
-        }
-        return null;
-    }
-
-    private Object getColumnValue(String columnName, ISqlParser iSqlParser, BoundSql boundSql) {
-        MapperMethod.ParamMap paramMap = (MapperMethod.ParamMap) boundSql.getParameterObject();
-        List<ColumnValue> cols = iSqlParser.getcolumns();
-        for (int i = 0; i < cols.size(); i++) {
-            if (Objects.equals(cols.get(i).column, columnName)) {
-                //                if (cols.get(i).value.equals("?")) //TODO
-                return paramMap.get(boundSql.getParameterMappings().get(i).getProperty());
-            }
-        }
-        return null;
-    }
 
     public void init(Collection<TableConfig> tableConfigs) {
         ShardConfig.init(tableConfigs);

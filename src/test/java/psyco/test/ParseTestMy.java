@@ -8,7 +8,10 @@ import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
 import com.alibaba.druid.util.JdbcUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.junit.Test;
+import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.DruidUtils;
+import psyco.shardy.sqlparser.ISqlParser;
 
 import java.util.List;
 
@@ -18,6 +21,14 @@ public class ParseTestMy {
         // TODO Auto-generated constructor stub
     }
 
+
+    @Test
+    public void test() {
+        String sql = "select * from User where role = ? and id in (?,?,?)";
+        ISqlParser parser = new DruidSqlParser();
+        parser.init(sql);
+        parser.getcolumns().stream().forEach(columnValue -> System.out.println(columnValue));
+    }
 
     public static void main(String[] args) {
 
@@ -37,7 +48,7 @@ public class ParseTestMy {
 
         List<SQLSelectItem> items = null;
 
-        SQLStatement sqlStatement  =  stmtList.get(0);
+        SQLStatement sqlStatement = stmtList.get(0);
         for (SQLStatement stmt : stmtList) {
             // stmt.accept(visitor);
             if (stmt instanceof SQLSelectStatement) {
@@ -73,15 +84,12 @@ public class ParseTestMy {
         }
         SQLExpr where1 = DruidUtils.getWhere(sqlStatement);
         System.out.println(where1.getClass());
-        if(where1 instanceof SQLBinaryOpExpr){
+        if (where1 instanceof SQLBinaryOpExpr) {
             System.out.println(DruidUtils.getColNamesFromWhere(where1));
 
         }
 
     }
-
-
-
 
 
 }

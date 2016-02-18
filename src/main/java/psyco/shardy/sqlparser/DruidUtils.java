@@ -4,6 +4,7 @@ import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.druid.sql.ast.expr.SQLInListExpr;
 import com.alibaba.druid.sql.ast.statement.*;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.alibaba.druid.sql.parser.SQLStatementParser;
@@ -13,7 +14,6 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Created by lipeng on 16/2/4.
@@ -87,11 +87,16 @@ public class DruidUtils {
         return re;
     }
 
-    public static List<SQLBinaryOpExpr> getColsFromWhere(SQLExpr where) {
-        List<SQLBinaryOpExpr> re = Lists.newLinkedList();
-        if (where instanceof SQLBinaryOpExpr)
-            flatSqlBinaryOpExpr((SQLBinaryOpExpr) where,
-                    sqlBinaryOpExpr -> re.add(sqlBinaryOpExpr));
+    public static List<ColumnValue> getColsFromWhere(SQLExpr where) {
+        List<ColumnValue> re = Lists.newLinkedList();
+        flatSqlExpr(where, sqlExpr -> {
+            if (sqlExpr instanceof SQLInListExpr) {
+                re.add(new ColumnValue(((SQLInListExpr) sqlExpr).getExpr().toString(), null));
+            } else if (sqlExpr instanceof SQLBinaryOpExpr) {
+                SQLBinaryOpExpr sqlBinaryOpExpr = (SQLBinaryOpExpr) sqlExpr;
+                re.add(new ColumnValue(sqlBinaryOpExpr.getLeft().toString(), sqlBinaryOpExpr.getRight().toString()));
+            }
+        });
         return re;
     }
 
@@ -106,37 +111,36 @@ public class DruidUtils {
                 re.add(new ColumnValue(cols.get(i).toString(), values.get(i).toString()));
             return re;
         }
-        return DruidUtils.getColsFromWhere(getWhere(stmt)).stream()
-                .map(sqlBinaryOpExpr -> new ColumnValue(sqlBinaryOpExpr.getLeft().toString(), sqlBinaryOpExpr.getRight().toString()))
-                .collect(Collectors.toList());
-    }
-
-    private static List<SQLExpr> flatSqlExprToList(SQLExpr sqlExpr) {
-        List<SQLExpr> result = Lists.newLinkedList();
-        flatSqlExpr(sqlExpr, sqlExpr1 -> result.add(sqlExpr1));
-        return result;
+        return DruidUtils.getColsFromWhere(getWhere(stmt));
     }
 
     private static void flatSqlExpr(SQLExpr sqlExpr, Consumer<SQLExpr> re) {
         if (sqlExpr instanceof SQLBinaryOpExpr) {
             SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr) sqlExpr;
-            if (binaryOpExpr.getLeft() instanceof SQLBinaryOpExpr) {
-                flatSqlExpr(binaryOpExpr.getLeft(), re);
-                flatSqlExpr(binaryOpExpr.getRight(), re);
-            } else
+            if (isColumnOperator(binaryOpExpr)) {
                 re.accept(sqlExpr);
+                return;
+            }
+            flatSqlExpr(binaryOpExpr.getLeft(), re);
+            flatSqlExpr(binaryOpExpr.getRight(), re);
         } else
             re.accept(sqlExpr);
     }
 
-    private static void flatSqlBinaryOpExpr(SQLBinaryOpExpr sqlExpr, Consumer<SQLBinaryOpExpr> re) {
-        if (!(sqlExpr.getLeft() instanceof SQLBinaryOpExpr)) {
-            re.accept(sqlExpr);
-            return;
+    private static boolean isColumnOperator(SQLBinaryOpExpr binaryOpExpr) {
+        switch (binaryOpExpr.getOperator()) {
+            case Equality:
+            case GreaterThan:
+            case GreaterThanOrEqual:
+            case NotEqual:
+            case LessThan:
+            case LessThanOrEqual:
+            case LessThanOrEqualOrGreaterThan:
+            case Like:
+            case NotLike:
+                return true;
         }
-        flatSqlBinaryOpExpr((SQLBinaryOpExpr) sqlExpr.getLeft(), re);
-        flatSqlBinaryOpExpr((SQLBinaryOpExpr) sqlExpr.getRight(), re);
+        return false;
     }
-
 
 }

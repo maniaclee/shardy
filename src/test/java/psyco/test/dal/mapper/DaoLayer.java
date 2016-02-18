@@ -13,8 +13,10 @@ public interface DaoLayer {
     @Select("select * from User where id < #{idVar}")
     List<User> find(@Param("idVar") long id);
 
+    List<User> findByIds(@Param("ids") List<Long> ids,@Param("role") String role);
+
     @Insert("insert into   User(id,name) values(#{id},#{name})")
-    @SelectKey(statement="select #{id}", keyProperty="", before=false, resultType=long.class)
+    @SelectKey(statement = "select #{id}", keyProperty = "", before = false, resultType = long.class)
     long insert(User user);
 
     @Select("select * from User where name = #{name} ")

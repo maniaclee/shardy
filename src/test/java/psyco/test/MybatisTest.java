@@ -1,9 +1,9 @@
 package psyco.test;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -33,6 +33,11 @@ public class MybatisTest {
     public void test() {
         print(daoLayer.find(10000001));
         print(daoLayer.find(32));
+    }
+    @Test
+    public void testBatch() {
+//        print(daoLayer.findByIds(Lists.newArrayList(10000001l,23l,10000000l),"USER"));
+        print(daoLayer.findByIds(Lists.newArrayList(25l,23l,10000002l),"USER"));
     }
 
     @Test

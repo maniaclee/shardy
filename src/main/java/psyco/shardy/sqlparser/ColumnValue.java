@@ -12,4 +12,12 @@ public class ColumnValue {
         this.column = column;
         this.value = value;
     }
+
+    @Override
+    public String toString() {
+        return "ColumnValue{" +
+                "column='" + column + '\'' +
+                ", value='" + value + '\'' +
+                '}';
+    }
 }

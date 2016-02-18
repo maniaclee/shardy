@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.io.Resource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
 import psyco.shardy.config.BucketShardStrategy;
@@ -36,6 +37,8 @@ import java.util.Properties;
 @PropertySource("application.properties")
 public class DalConfig {
 
+    @Value(value = "classpath:sqlmap/*.xml")
+    Resource[] resources;
 
     @Bean
     public TableConfig User() {
@@ -57,6 +60,7 @@ public class DalConfig {
         ssfb.setTypeAliasesPackage("psyco.test.dal.entity");
         ssfb.setPlugins(new Interceptor[]{shardInterceptor});
         ssfb.setDataSource(dataSource);
+        ssfb.setMapperLocations(resources);
         return ssfb;
     }
 

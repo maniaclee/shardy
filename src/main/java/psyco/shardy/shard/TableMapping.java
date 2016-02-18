@@ -2,7 +2,6 @@ package psyco.shardy.shard;
 
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlSource;
-import psyco.shardy.mybatis.ExtendedSqlSource;
 import psyco.shardy.sqlparser.DruidSqlParser;
 import psyco.shardy.sqlparser.ISqlParser;
 

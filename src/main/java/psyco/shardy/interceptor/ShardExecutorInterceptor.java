@@ -101,7 +101,6 @@ public class ShardExecutorInterceptor implements Interceptor {
 
     private void changeSql(BoundSql boundSql, String sql) throws NoSuchFieldException {
         ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", sql);
-
     }
 
     private void changeSql(MappedStatement mappedStatement, String sqlResult) throws NoSuchFieldException, IllegalAccessException {

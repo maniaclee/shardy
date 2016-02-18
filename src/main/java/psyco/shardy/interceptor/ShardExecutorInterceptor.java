@@ -86,7 +86,7 @@ public class ShardExecutorInterceptor implements Interceptor {
                 List re = Lists.newLinkedList();
                 for (String t : shards.keySet()) {
                     iSqlParser.setTableName(t);
-                    //TODO
+                    /** don't worry about the parameter count,just changing the table will do */
                     String sqlResult = iSqlParser.toSql();
                     Transfer.setSqlShard(sqlResult);
                     List tmp = (List) invocation.proceed();

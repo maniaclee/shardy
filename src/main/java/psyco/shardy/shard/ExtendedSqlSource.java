@@ -35,7 +35,7 @@ public class ExtendedSqlSource implements SqlSource {
     @Override
     public BoundSql getBoundSql(Object parameterObject) {
         BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
-//        changeSql(boundSql);
+        /** thread local to transfer the value, for multi invoke */
         try {
             ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", Transfer.getSqlShard());
         } catch (NoSuchFieldException e) {

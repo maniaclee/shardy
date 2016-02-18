@@ -5,6 +5,7 @@ import org.apache.ibatis.binding.MapperMethod;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlSource;
+import psyco.shardy.ShardException;
 import psyco.shardy.SqlParseException;
 import psyco.shardy.config.ShardConfig;
 import psyco.shardy.config.ShardContext;
@@ -40,6 +41,7 @@ public class ExtendedSqlSource implements SqlSource {
             ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", Transfer.getSqlShard());
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
+            throw new ShardException("error setting the sql result for sql:" + boundSql.getSql());
         }
         return boundSql;
     }

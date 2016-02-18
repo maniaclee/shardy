@@ -44,6 +44,7 @@ public class ShardExecutorInterceptor implements Interceptor {
         MappedStatement mappedStatement = (MappedStatement) args[0];
         Object arg = args[1];
         BoundSql boundSql = mappedStatement.getBoundSql(arg);
+        //        BoundSql boundSql = (BoundSql) args[args.length - 1];
         String sql = boundSql.getSql();
         ISqlParser iSqlParser = new DruidSqlParser();
         try {
@@ -69,11 +70,7 @@ public class ShardExecutorInterceptor implements Interceptor {
                 iSqlParser.setTableName(re.getTableName());
                 String sqlResult = iSqlParser.toSql();
                 System.out.println("sqlResult->" + sqlResult);
-                if (mappedStatement.getSqlSource() instanceof RawSqlSource) {
-                    RawSqlSource sqlSource = (RawSqlSource) mappedStatement.getSqlSource();
-                    StaticSqlSource staticSqlSource = (StaticSqlSource) ReflectionUtils.getFieldValue(sqlSource, "sqlSource");
-                    ReflectionUtils.setDeclaredFieldValue(staticSqlSource, "sql", sqlResult);
-                }
+                changeSql(boundSql, sqlResult);
             }
 
             String db = re.getDbName();
@@ -85,6 +82,19 @@ public class ShardExecutorInterceptor implements Interceptor {
         }
 
         return invocation.proceed();
+    }
+
+    private void changeSql(BoundSql boundSql, String sql) throws NoSuchFieldException {
+        ReflectionUtils.setDeclaredFieldValue(boundSql, "sql", sql);
+
+    }
+
+    private void changeSql(MappedStatement mappedStatement, String sqlResult) throws NoSuchFieldException, IllegalAccessException {
+        if (mappedStatement.getSqlSource() instanceof RawSqlSource) {
+            RawSqlSource sqlSource = (RawSqlSource) mappedStatement.getSqlSource();
+            StaticSqlSource staticSqlSource = (StaticSqlSource) ReflectionUtils.getFieldValue(sqlSource, "sqlSource");
+            ReflectionUtils.setDeclaredFieldValue(staticSqlSource, "sql", sqlResult);
+        }
     }
 
     private Object findMasterValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) throws SqlParseException {

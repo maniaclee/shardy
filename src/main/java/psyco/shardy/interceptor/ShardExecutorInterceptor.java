@@ -26,6 +26,7 @@ import psyco.shardy.sqlparser.ISqlParser;
 import psyco.shardy.sqlparser.SqlType;
 import psyco.shardy.util.ReflectionUtils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.util.Collection;
@@ -45,11 +46,34 @@ public class ShardExecutorInterceptor implements Interceptor {
         Object[] args = invocation.getArgs();
         MappedStatement mappedStatement = (MappedStatement) args[0];
         Object arg = args[1];
+        
         /** init MappedStatement */
         updateMappedStatement(mappedStatement);
+
+        switch (mappedStatement.getSqlCommandType()) {
+            case INSERT:
+                return insert(mappedStatement, arg, invocation);
+            case SELECT:
+                return select(mappedStatement, arg, invocation);
+            case UPDATE:
+            case DELETE:
+                return update(mappedStatement, arg, invocation);
+        }
+        return invocation.proceed();
+    }
+
+    private Object select(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
         /** lazy init table mapping & get */
         String table = TableMapping.getTableName(mappedStatement, arg);
         System.out.println("tablename->" + table);
+        return invocation.proceed();
+    }
+
+    private Object insert(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
+        return invocation.proceed();
+    }
+
+    private Object update(MappedStatement mappedStatement, Object arg, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
         return invocation.proceed();
     }
 

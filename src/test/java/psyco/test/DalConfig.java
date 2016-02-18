@@ -20,7 +20,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
 import psyco.shardy.config.BucketShardStrategy;
 import psyco.shardy.config.TableConfig;
-import psyco.shardy.interceptor.ShardInterceptor;
 import psyco.shardy.spring.ShardInterceptorFactoryBean;
 
 import java.sql.SQLException;
@@ -53,7 +52,7 @@ public class DalConfig {
     }
 
     @Bean
-    public SqlSessionFactoryBean sqlSessionFactory(ShardInterceptor shardInterceptor,DruidDataSource dataSource) {
+    public SqlSessionFactoryBean sqlSessionFactory(Interceptor shardInterceptor,DruidDataSource dataSource) {
         SqlSessionFactoryBean ssfb = new SqlSessionFactoryBean();
         ssfb.setTypeAliasesPackage("psyco.test.dal.entity");
         ssfb.setPlugins(new Interceptor[]{shardInterceptor});

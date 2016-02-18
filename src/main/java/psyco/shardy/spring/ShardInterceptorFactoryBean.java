@@ -9,7 +9,7 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import psyco.shardy.config.ShardConfig;
 import psyco.shardy.config.TableConfig;
-import psyco.shardy.interceptor.ShardInterceptor;
+import psyco.shardy.interceptor.ShardExecutorInterceptor;
 import psyco.shardy.util.ReflectionUtils;
 
 import java.util.List;
@@ -18,15 +18,15 @@ import java.util.Map;
 /**
  * Created by lipeng on 16/2/16.
  */
-public class ShardInterceptorFactoryBean implements FactoryBean<ShardInterceptor>, ApplicationListener<ContextRefreshedEvent> {
+public class ShardInterceptorFactoryBean implements FactoryBean<Interceptor>, ApplicationListener<ContextRefreshedEvent> {
     @Override
-    public ShardInterceptor getObject() throws Exception {
-        return new ShardInterceptor();
+    public Interceptor getObject() throws Exception {
+        return new ShardExecutorInterceptor();
     }
 
     @Override
-    public Class<ShardInterceptor> getObjectType() {
-        return ShardInterceptor.class;
+    public Class<Interceptor> getObjectType() {
+        return Interceptor.class;
     }
 
 
@@ -54,7 +54,7 @@ public class ShardInterceptorFactoryBean implements FactoryBean<ShardInterceptor
         SqlSessionFactoryBean ssfb = context.getBean(SqlSessionFactoryBean.class);
         Interceptor[] plugins = (Interceptor[]) ReflectionUtils.getFieldValue(ssfb, "plugins");
         List<Interceptor> interceptors = plugins == null ? Lists.newLinkedList() : Lists.newArrayList(plugins);
-        interceptors.add(context.getBean(ShardInterceptor.class));
+        interceptors.add(context.getBean(Interceptor.class));//TODO
         ssfb.setPlugins(interceptors.toArray(new Interceptor[0]));
     }
 }

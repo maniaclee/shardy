@@ -38,7 +38,7 @@ public class MybatisTest {
     @Test
     public void insert() {
         User user = new User();
-        user.setId(10000000 + 6);
+        user.setId(10000000 + 7);
         user.setName("test");
         System.out.println("re - > " + daoLayer.insert(user));
     }

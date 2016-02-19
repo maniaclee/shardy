@@ -132,8 +132,7 @@ public class ExtendedSqlSource implements SqlSource {
         for (int i = 0; i < cols.size(); i++) {
             if (Objects.equals(cols.get(i).column, columnName)) {
                 //                if (cols.get(i).value.equals("?")) //TODO
-
-                return paramMap.get("param" + i);
+                return paramMap.get("param" + (1)); //index start from 1
             }
         }
         return null;

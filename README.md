@@ -1,6 +1,8 @@
 # shardy
 
-MySql shard for Mybatis.
+### MySql shard for Mybatis.
+
+Goal:	Shard quietly base on table , never change the sql.
 
 ### Usage
 

@@ -7,7 +7,7 @@ import psyco.shardy.ShardException;
  */
 public class BucketShardStrategy implements ShardStrategy {
     @Override
-    public ShardResult indexTableByColumn(ShardContext context) {
+    public ShardResult indexTableByColumn(ShardStrategyContext context) {
         Object v = context.getColumnValue();
         if (!(v instanceof Number))
             throw new ShardException("column value must be number : " + v);

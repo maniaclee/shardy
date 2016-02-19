@@ -8,7 +8,7 @@ import org.apache.ibatis.mapping.SqlSource;
 import psyco.shardy.ShardException;
 import psyco.shardy.SqlParseException;
 import psyco.shardy.config.ShardConfig;
-import psyco.shardy.config.ShardContext;
+import psyco.shardy.config.ShardStrategyContext;
 import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
@@ -74,7 +74,7 @@ public class ExtendedSqlSource implements SqlSource {
                 /** only select first to route table & all the master values must be in the SAME table */
                 masterValue = masters.get(0);
             }
-            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
+            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardStrategyContext(masterValue, table));
             String destTable = re.getTableName();
             if (StringUtils.isNotBlank(destTable)) {
                 iSqlParser.setTableName(re.getTableName());

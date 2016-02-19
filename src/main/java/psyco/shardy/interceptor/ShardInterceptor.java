@@ -8,7 +8,7 @@ import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.plugin.*;
 import psyco.shardy.SqlParseException;
 import psyco.shardy.config.ShardConfig;
-import psyco.shardy.config.ShardContext;
+import psyco.shardy.config.ShardStrategyContext;
 import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
@@ -57,7 +57,7 @@ public class ShardInterceptor implements Interceptor {
             Object masterValue = findMasterValue(iSqlParser, boundSql, tableConfig);
             if (masterValue == null)
                 throw new SqlParseException("no master value is found:" + sql);
-            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
+            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardStrategyContext(masterValue, table));
             String destTable = re.getTableName();
             if (StringUtils.isNotBlank(destTable)) {
                 iSqlParser.setTableName(re.getTableName());

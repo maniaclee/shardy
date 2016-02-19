@@ -14,7 +14,7 @@ import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 import psyco.shardy.SqlParseException;
 import psyco.shardy.config.ShardConfig;
-import psyco.shardy.config.ShardContext;
+import psyco.shardy.config.ShardStrategyContext;
 import psyco.shardy.config.ShardResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
@@ -89,7 +89,7 @@ public class ShardExecutorInterceptor implements Interceptor {
                 }
                 return re;
             }
-            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardContext(masterValue, table));
+            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardStrategyContext(masterValue, table));
             String destTable = re.getTableName();
             if (StringUtils.isNotBlank(destTable)) {
                 iSqlParser.setTableName(re.getTableName());
@@ -111,7 +111,7 @@ public class ShardExecutorInterceptor implements Interceptor {
     private Multimap<String, Object> parseValueList(List masters, TableConfig config) {
         Multimap<String, Object> myMultimap = ArrayListMultimap.create();
         for (Object o : masters) {
-            ShardResult shardResult = config.getShardStrategy().indexTableByColumn(new ShardContext(o, config.getTable()));
+            ShardResult shardResult = config.getShardStrategy().indexTableByColumn(new ShardStrategyContext(o, config.getTable()));
             if (StringUtils.isNoneBlank(shardResult.getTableName()))
                 myMultimap.put(shardResult.getTableName(), o);
         }

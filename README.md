@@ -45,3 +45,11 @@ If you want a table to shard by a column,provide a TableConfig bean like this:
 ```
 
 That's done. You don't need to change your sql at all.
+
+### Requirements
+
+1. Mybatis 3.0
+2. Jdk 1.8
+3. druid(alibaba)
+4. commons-lang3 & guava
+

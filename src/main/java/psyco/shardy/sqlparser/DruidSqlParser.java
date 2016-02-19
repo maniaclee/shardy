@@ -5,6 +5,7 @@ import com.alibaba.druid.sql.ast.statement.SQLDeleteStatement;
 import com.alibaba.druid.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.alibaba.druid.sql.ast.statement.SQLUpdateStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import psyco.shardy.SqlParseException;
 
 import java.util.List;
@@ -59,6 +60,12 @@ public class DruidSqlParser implements ISqlParser {
 
     @Override
     public String toSql() {
+        if (sqlStatement instanceof MySqlUpdateStatement) {
+            StringBuffer stringBuffer = new StringBuffer();
+            sqlStatement.output(stringBuffer);
+            return stringBuffer.toString();
+        }
         return sqlStatement.toString();
     }
+
 }

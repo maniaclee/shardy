@@ -42,6 +42,12 @@ public class MybatisTest {
     }
 
     @Test
+    public void update() {
+        print(daoLayer.updateLevelById(10000002l , 3));
+    }
+
+
+    @Test
     public void insert() {
         User user = new User();
         user.setId(10000000 + 7);

@@ -4,12 +4,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.binding.MapperMethod;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
+import org.apache.ibatis.mapping.ParameterMapping;
 import org.apache.ibatis.mapping.SqlSource;
 import psyco.shardy.ShardException;
 import psyco.shardy.SqlParseException;
 import psyco.shardy.config.ShardConfig;
-import psyco.shardy.config.ShardStrategyContext;
 import psyco.shardy.config.ShardResult;
+import psyco.shardy.config.ShardStrategyContext;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.datasource.DynamicDataSource;
 import psyco.shardy.sqlparser.ColumnValue;
@@ -19,6 +20,7 @@ import psyco.shardy.util.ReflectionUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by lipeng on 16/2/18.
@@ -132,7 +134,14 @@ public class ExtendedSqlSource implements SqlSource {
         for (int i = 0; i < cols.size(); i++) {
             if (Objects.equals(cols.get(i).column, columnName)) {
                 //                if (cols.get(i).value.equals("?")) //TODO
-                return paramMap.get("param" + (1)); //index start from 1
+                List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
+                String property = parameterMappings.get(i).getProperty();
+                if (!property.startsWith("_"))
+                    return paramMap.get("param" + (i + 1)); //index start from 1
+                return parameterMappings.stream()
+                        .filter(p -> p.getProperty().startsWith("__frch_" + columnName))
+                        .map(parameterMapping -> boundSql.getAdditionalParameter(parameterMapping.getProperty()))
+                        .collect(Collectors.toList());
             }
         }
         return null;

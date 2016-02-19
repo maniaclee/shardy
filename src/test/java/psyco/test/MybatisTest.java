@@ -34,10 +34,11 @@ public class MybatisTest {
         print(daoLayer.find(10000001));
         print(daoLayer.find(32));
     }
+
     @Test
     public void testBatch() {
-//        print(daoLayer.findByIds(Lists.newArrayList(10000001l,23l,10000000l),"USER"));
-        print(daoLayer.findByIds(Lists.newArrayList(25l,23l,10000002l),"USER"));
+        //        print(daoLayer.findByIds(Lists.newArrayList(10000001l,23l,10000000l),"USER"));
+        print(daoLayer.findByIds(Lists.newArrayList(25l, 23l, 10000002l), "USER"));
     }
 
     @Test

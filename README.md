@@ -74,3 +74,28 @@ That's done. You don't need to change your sql at all.
 3. druid(alibaba)
 4. commons-lang3 & guava
 
+### Supported Sql
+
+1-	by master column, operator "="
+
+``` sql
+select * from T where id = ?
+```
+
+2-	by master column, operator "in"
+
+``` sql
+update T set status = ? where id in (?,?,?)
+```
+
+3-	insert with id
+
+``` sql
+insert into T(id,status ....) values(?,? ....)
+```
+
+join/union , order by and slave search is not supported for now , to be continued ...
+
+### Contact
+
+If you have any issues , feel free to send email to dianxiangan@aliyun.com, thx.

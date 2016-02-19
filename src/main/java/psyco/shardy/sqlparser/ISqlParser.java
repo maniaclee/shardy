@@ -20,7 +20,7 @@ public interface ISqlParser {
 
     boolean setTableName(String tableName);
 
-    List<ColumnValue> getcolumns();
+    List<ColumnValue> getColumns();
 
     String toSql();
 

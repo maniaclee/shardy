@@ -80,7 +80,7 @@ public class ShardInterceptor implements Interceptor {
     private Object findMasterValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) throws SqlParseException {
         if (iSqlParser.getType() == SqlType.INSERT) {
             /** Insert */
-            List<ColumnValue> columnValues = iSqlParser.getcolumns();
+            List<ColumnValue> columnValues = iSqlParser.getColumns();
             for (int i = 0; i < columnValues.size(); i++) {
                 if (columnValues.get(i).column.equals(tableConfig.getMasterColumn())) {
                     try {
@@ -101,7 +101,7 @@ public class ShardInterceptor implements Interceptor {
 
     private Object getColumnValue(String columnName, ISqlParser iSqlParser, BoundSql boundSql) {
         MapperMethod.ParamMap paramMap = (MapperMethod.ParamMap) boundSql.getParameterObject();
-        List<ColumnValue> cols = iSqlParser.getcolumns();
+        List<ColumnValue> cols = iSqlParser.getColumns();
         for (int i = 0; i < cols.size(); i++) {
             if (Objects.equals(cols.get(i).column, columnName)) {
                 //                if (cols.get(i).value.equals("?")) //TODO

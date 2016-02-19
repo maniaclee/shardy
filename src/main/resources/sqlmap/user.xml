@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="psyco.test.dal.mapper.DaoLayer">
+    <update id="updateLevelByIds">
+        UPDATE   User
+        SET   level = #{l}
+        <where>
+            role= #{role}
+            and
+            id in
+            <foreach item="i" index="index" collection="idvars" open="(" separator="," close=")">
+                #{i}
+            </foreach>
+        </where>
+    </update>
 
     <select id="findByIds" resultType="psyco.test.dal.entity.User">
         SELECT * from User

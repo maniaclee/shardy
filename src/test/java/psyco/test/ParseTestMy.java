@@ -24,10 +24,26 @@ public class ParseTestMy {
 
     @Test
     public void test() {
-        String sql = "select * from User where role = ? and id in (?,?,?)";
+        String sql = "select * from User where role = ? and id in (?,?,?) and a in (?,?)";
         ISqlParser parser = new DruidSqlParser();
         parser.init(sql);
-        parser.getcolumns().stream().forEach(columnValue -> System.out.println(columnValue));
+        parser.getColumns().stream().forEach(columnValue -> System.out.println(columnValue));
+    }
+    @Test
+    public void select() {
+        String sql = "select * from User where role = ? and id in (?,?,?) or shit in (?,?) ";
+        ISqlParser parser = new DruidSqlParser();
+        parser.init(sql);
+        parser.getColumns().stream().forEach(columnValue -> System.out.println(columnValue));
+    }
+
+
+    @Test
+    public void update() {
+        String sql = "update User set level = ? where id = ?";
+        ISqlParser parser = new DruidSqlParser();
+        parser.init(sql);
+        System.out.println(parser.toSql());
     }
 
     public static void main(String[] args) {

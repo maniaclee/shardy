@@ -24,8 +24,7 @@ public class ShardExecutor {
     public Object exec(ShardContext shardContext) throws InvocationTargetException, IllegalAccessException {
         MappedStatement mappedStatement = shardContext.mappedStatement;
         Invocation invocation = shardContext.invocation;
-        ExtendedSqlSource extendedSqlSource = (ExtendedSqlSource) mappedStatement.getSqlSource();
-        BoundSql boundSql = extendedSqlSource.buildBoundSql(shardContext.arg);
+        BoundSql boundSql = shardContext.boundSql;
         String sql = boundSql.getSql();
         ISqlParser iSqlParser = ExtendedSqlSource.createISqlParser(sql);
 
@@ -35,7 +34,8 @@ public class ShardExecutor {
             return invocation.proceed();
         TableConfig tableConfig = ShardConfig.getTableConfig(table);
         if (tableConfig != null) {
-            Object masterValue = ExtendedSqlSource.findMasterValue(iSqlParser, boundSql, tableConfig);
+
+            Object masterValue = ExtendedSqlSource.findMasterValue(iSqlParser, tableConfig, shardContext);
             if (masterValue == null)
                 throw new SqlParseException("no master value is found:" + sql);
             if (masterValue instanceof List) {

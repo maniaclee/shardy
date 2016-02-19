@@ -43,14 +43,20 @@ public class MybatisTest {
 
     @Test
     public void update() {
-        print(daoLayer.updateLevelById(10000002l , 3));
+        print(daoLayer.updateLevelById(10000002l, 3));
+    }
+
+    @Test
+    public void updates() {
+        print(daoLayer.updateLevelByIds(Lists.newArrayList(25l, 23l, 10000002l), 160, "USER"));
     }
 
 
     @Test
     public void insert() {
         User user = new User();
-        user.setId(10000000 + 7);
+//        user.setId(10000000 + 8);
+        user.setId(59);
         user.setName("test");
         System.out.println("re - > " + daoLayer.insert(user));
     }

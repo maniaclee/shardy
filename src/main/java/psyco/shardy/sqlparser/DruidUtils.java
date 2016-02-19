@@ -1,19 +1,19 @@
 package psyco.shardy.sqlparser;
 
+import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.SQLStatement;
 import com.alibaba.druid.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.druid.sql.ast.expr.SQLInListExpr;
 import com.alibaba.druid.sql.ast.statement.*;
-import com.alibaba.druid.sql.parser.SQLParserUtils;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
 import com.alibaba.druid.util.JdbcUtils;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Created by lipeng on 16/2/4.
@@ -21,8 +21,11 @@ import java.util.function.Consumer;
 public class DruidUtils {
 
     public static List<SQLStatement> parse(String sql) {
-        SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, JdbcUtils.MYSQL);
-        return parser.parseStatementList();
+        /**
+         SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, JdbcUtils.MYSQL);
+         return parser.parseStatementList();
+         */
+        return SQLUtils.toStatementList(sql, JdbcUtils.MYSQL);
     }
 
     public static String getTableName(SQLStatement stmt) {
@@ -87,32 +90,49 @@ public class DruidUtils {
         return re;
     }
 
-    public static List<ColumnValue> getColsFromWhere(SQLExpr where) {
-        List<ColumnValue> re = Lists.newLinkedList();
-        flatSqlExpr(where, sqlExpr -> {
-            if (sqlExpr instanceof SQLInListExpr) {
-                re.add(new ColumnValue(((SQLInListExpr) sqlExpr).getExpr().toString(), null));
-            } else if (sqlExpr instanceof SQLBinaryOpExpr) {
-                SQLBinaryOpExpr sqlBinaryOpExpr = (SQLBinaryOpExpr) sqlExpr;
-                re.add(new ColumnValue(sqlBinaryOpExpr.getLeft().toString(), sqlBinaryOpExpr.getRight().toString()));
-            }
-        });
-        return re;
-    }
-
 
     public static List<ColumnValue> getColumns(SQLStatement stmt) {
         if (stmt instanceof SQLInsertStatement) {
             SQLInsertStatement insertStatement = (SQLInsertStatement) stmt;
             List<SQLExpr> cols = insertStatement.getColumns();
-            List<SQLExpr> values = insertStatement.getValues().getValues();
             List<ColumnValue> re = new ArrayList<>(cols.size());
             for (int i = 0; i < cols.size(); i++)
-                re.add(new ColumnValue(cols.get(i).toString(), values.get(i).toString()));
+                re.add(new ColumnValue(cols.get(i).toString(), 1));
             return re;
         }
-        return DruidUtils.getColsFromWhere(getWhere(stmt));
+        if (stmt instanceof SQLUpdateStatement) {
+            List<ColumnValue> re = ((SQLUpdateStatement) stmt).getItems().stream()
+                    .map(sqlUpdateSetItem -> new ColumnValue(sqlUpdateSetItem.getColumn().toString(), 1))
+                    .collect(Collectors.toList());
+            re.addAll(getColumnsFromWhere((SQLBinaryOpExpr) getWhere(stmt)));
+            return re;
+        }
+        return getColumnsFromWhere((SQLBinaryOpExpr) getWhere(stmt));
     }
+
+    public static List<ColumnValue> getColumnsFromWhere(SQLBinaryOpExpr where) {
+//        return Lists.reverse(SQLUtils.split(where).stream()
+//                .map(sqlExpr -> calValueCount(sqlExpr))
+//                .collect(Collectors.toList()));
+        return getColsFromWhere(where);
+    }
+
+    public static List<ColumnValue> getColsFromWhere(SQLExpr where) {
+        List<ColumnValue> re = Lists.newLinkedList();
+        flatSqlExpr(where, sqlExpr -> re.add(calValueCount(sqlExpr)));
+        return re;
+    }
+
+    private static ColumnValue calValueCount(SQLExpr sqlExpr) {
+        if (sqlExpr instanceof SQLInListExpr) {
+            SQLInListExpr in = (SQLInListExpr) sqlExpr;
+            return new ColumnValue(in.getExpr().toString(), in.getTargetList().size());
+        } else if (sqlExpr instanceof SQLBinaryOpExpr) {
+            return new ColumnValue(((SQLBinaryOpExpr) sqlExpr).getLeft().toString(), 1);
+        }
+        return null;
+    }
+
 
     private static void flatSqlExpr(SQLExpr sqlExpr, Consumer<SQLExpr> re) {
         if (sqlExpr instanceof SQLBinaryOpExpr) {

@@ -1,6 +1,6 @@
 # shardy
 
-### MySql shard for Mybatis.
+MySql shard for Mybatis.
 
 ### Usage
 

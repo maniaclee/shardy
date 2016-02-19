@@ -19,9 +19,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
-import psyco.shardy.config.ShardResult;
-import psyco.shardy.config.ShardStrategy;
-import psyco.shardy.config.ShardStrategyContext;
+import psyco.shardy.config.BucketShardStrategy;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.spring.ShardInterceptorFactoryBean;
 
@@ -47,14 +45,7 @@ public class DalConfig {
         TableConfig config = new TableConfig();
         config.setTable("User");
         config.setMasterColumn("id");
-//        config.setShardStrategy(new BucketShardStrategy());
-        config.setShardStrategy(new ShardStrategy() {
-            @Override
-            public ShardResult indexTableByColumn(ShardStrategyContext context) {
-                long columnValue = (long) context.getColumnValue();
-                return new ShardResult(context.getTable() + "_" + columnValue/10000,null);
-            }
-        });
+        config.setShardStrategy(new BucketShardStrategy());
         return config;
     }
 
@@ -64,10 +55,10 @@ public class DalConfig {
     }
 
     @Bean
-    public SqlSessionFactoryBean sqlSessionFactory(Interceptor shardInterceptor,DruidDataSource dataSource) {
+    public SqlSessionFactoryBean sqlSessionFactory(Interceptor shardInterceptor, DruidDataSource dataSource) {
         SqlSessionFactoryBean ssfb = new SqlSessionFactoryBean();
         ssfb.setTypeAliasesPackage("psyco.test.dal.entity");
-//        ssfb.setPlugins(new Interceptor[]{shardInterceptor});
+        ssfb.setPlugins(new Interceptor[]{shardInterceptor});
         ssfb.setDataSource(dataSource);
         ssfb.setMapperLocations(resources);
         return ssfb;

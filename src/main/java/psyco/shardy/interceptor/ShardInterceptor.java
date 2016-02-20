@@ -32,6 +32,7 @@ import java.util.Properties;
         //        @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
         //        @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class})
 })
+@Deprecated
 public class ShardInterceptor implements Interceptor {
 
     public Object intercept(Invocation invocation) throws Throwable {

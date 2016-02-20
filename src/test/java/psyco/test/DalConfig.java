@@ -3,6 +3,7 @@ package psyco.test;
 import com.alibaba.druid.filter.Filter;
 import com.alibaba.druid.filter.stat.StatFilter;
 import com.alibaba.druid.pool.DruidDataSource;
+import com.google.common.collect.Lists;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.ibatis.plugin.Interceptor;
@@ -19,8 +20,10 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
-import psyco.shardy.config.BucketShardStrategy;
 import psyco.shardy.config.TableConfig;
+import psyco.shardy.config.builder.SlaveConfigBuilder;
+import psyco.shardy.config.builder.TableConfigBuilder;
+import psyco.shardy.config.strategy.BucketArrayShardStrategy;
 import psyco.shardy.spring.ShardInterceptorFactoryBean;
 
 import java.sql.SQLException;
@@ -42,11 +45,15 @@ public class DalConfig {
 
     @Bean
     public TableConfig User() {
-        TableConfig config = new TableConfig();
-        config.setTable("User");
-        config.setMasterColumn("id");
-        config.setShardStrategy(new BucketShardStrategy());
-        return config;
+        return TableConfigBuilder.instance()
+                .table("User")
+                .masterColumn("id")
+                .shardStrategy(new BucketArrayShardStrategy(0, new long[]{10000000, 10000000}, true))
+                .slaveConfigs(Lists.newArrayList(
+                        SlaveConfigBuilder.instance()
+                                .setSlaveColumn("")
+                                .build()))
+                .build();
     }
 
     @Bean

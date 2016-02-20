@@ -17,9 +17,10 @@ import psyco.shardy.util.ReflectionUtils;
 import java.util.Collection;
 import java.util.Properties;
 
+/**
+ * Created by lipeng on 16/2/5.
+ */
 @Intercepts({
-        //        @Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class}),
-        //        @Signature(type = StatementHandler.class, method = "query", args = {Statement.class, ResultHandler.class}),
         @Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class}),
         @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class}),
         @Signature(type = Executor.class, method = "query", args = {MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class})
@@ -56,4 +57,11 @@ public class ShardExecutorInterceptor implements Interceptor {
     public void setProperties(Properties properties) {
     }
 
+    public ShardExecutor getShardExecutor() {
+        return shardExecutor;
+    }
+
+    public void setShardExecutor(ShardExecutor shardExecutor) {
+        this.shardExecutor = shardExecutor;
+    }
 }

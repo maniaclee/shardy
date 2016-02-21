@@ -22,9 +22,12 @@ public interface DaoLayer {
     @Select("select * from User where name = #{name} ")
     List<User> findByName(@Param("name") String name);
 
+    List<User> findByNames(@Param("names") List<String> names);
+
     @Update("update User set level = #{level} where id = #{idVar}")
     int updateLevelById(@Param("idVar") long id, @Param("level") Integer level);
 
     int updateLevelByIds(@Param("idvars") List<Long> ids, @Param("l") int level, @Param("role") String role);
+
 
 }

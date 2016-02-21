@@ -52,6 +52,16 @@ public class MybatisTest {
         print(daoLayer.updateLevelByIds(Lists.newArrayList(25l, 23l, 10000002l), 160, "USER"));
     }
 
+    @Test
+    public void name() {
+        print(daoLayer.findByName("shard_test"));
+        print(daoLayer.findByName("fuck"));
+    }
+    @Test
+    public void names() {
+        print(daoLayer.findByNames(Lists.newArrayList("shard_test","fuck")));
+    }
+
 
     @Test
     public void insert() {

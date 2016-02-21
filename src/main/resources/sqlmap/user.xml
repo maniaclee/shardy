@@ -25,4 +25,13 @@
             </foreach>
         </where>
     </select>
+    <select id="findByNames" resultType="psyco.test.dal.entity.User">
+        SELECT * from User
+        <where>
+            name in
+            <foreach item="n" index="index" collection="names" open="(" separator="," close=")">
+                #{n}
+            </foreach>
+        </where>
+    </select>
 </mapper>

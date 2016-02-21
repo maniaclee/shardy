@@ -6,11 +6,11 @@ package psyco.shardy.config;
 public class ShardResult {
 
     private String tableName;
-    private String DbName;
+    private String dbName;
 
     public ShardResult(String tableName, String dbName) {
         this.tableName = tableName;
-        DbName = dbName;
+        this.dbName = dbName;
     }
 
     public String getTableName() {
@@ -22,10 +22,10 @@ public class ShardResult {
     }
 
     public String getDbName() {
-        return DbName;
+        return dbName;
     }
 
     public void setDbName(String dbName) {
-        DbName = dbName;
+        this.dbName = dbName;
     }
 }

@@ -2,7 +2,7 @@
 
 ### MySql shard for Mybatis.
 
-Goal:	Shard quietly base on table , never change the sql.
+Goal:	Shard quietly base on tableName , never change the sql.
 
 ### Usage
 
@@ -45,20 +45,20 @@ Goal:	Shard quietly base on table , never change the sql.
     }
 ```
 
-##### Config table to shard
+##### Config tableName to shard
 
-If you want a table to shard by a column,provide a TableConfig bean like this:
+If you want a tableName to shard by a column,provide a TableConfig bean like this:
 
 ``` java
  	@Bean
     public TableConfig User() {
         TableConfig config = new TableConfig();
-        config.setTable("User");	//set table to shard
-        config.setMasterColumn("id");//set table column to shard
+        config.setTable("User");	//set tableName to shard
+        config.setMasterColumn("id");//set tableName column to shard
         config.setShardStrategy(new ShardStrategy() {
             @Override
             public ShardResult indexTableByColumn(ShardStrategyContext context) {
-              	//how to route table by column value
+              	//how to route tableName by column value
                 long columnValue = (long) context.getColumnValue();
                 return new ShardResult(context.getTable() + "_" + columnValue/10000,null);
             }

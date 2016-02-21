@@ -15,6 +15,7 @@ import java.util.List;
  */
 public class DruidSqlParser implements ISqlParser {
     SQLStatement sqlStatement;
+    private String sqlOriginal;
 
     @Override
     public void init(String sql) throws SqlParseException {
@@ -22,6 +23,7 @@ public class DruidSqlParser implements ISqlParser {
         if (statements == null || statements.isEmpty())
             throw new SqlParseException("empty sql is not allowed");
         this.sqlStatement = statements.get(0);
+        this.sqlOriginal = sql;
     }
 
     @Override
@@ -61,6 +63,11 @@ public class DruidSqlParser implements ISqlParser {
     @Override
     public String toSql() {
         return SQLUtils.toMySqlString(sqlStatement);
+    }
+
+    @Override
+    public String getSqlOriginal(){
+        return this.sqlOriginal;
     }
 
 }

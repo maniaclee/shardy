@@ -20,6 +20,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.Resource;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
+import psyco.shardy.ShardException;
+import psyco.shardy.config.SlaveMapping;
+import psyco.shardy.config.SlaveMappingResult;
 import psyco.shardy.config.TableConfig;
 import psyco.shardy.config.builder.SlaveConfigBuilder;
 import psyco.shardy.config.builder.TableConfigBuilder;
@@ -51,7 +54,17 @@ public class DalConfig {
                 .shardStrategy(new BucketArrayShardStrategy(0, new long[]{10000000, 10000000}, true))
                 .slaveConfigs(Lists.newArrayList(
                         SlaveConfigBuilder.instance()
-                                .setSlaveColumn("")
+                                .setSlaveColumn("name")
+                                .setSlaveMapping(new SlaveMapping() {
+                                    @Override
+                                    public SlaveMappingResult map(Object slaveColumn, String table) {
+                                        if (!(slaveColumn instanceof String))
+                                            throw new ShardException("error slave");
+                                        if (slaveColumn.toString().startsWith("shard"))
+                                            table += "_0";
+                                        return new SlaveMappingResult(table, null);
+                                    }
+                                })
                                 .build()))
                 .build();
     }

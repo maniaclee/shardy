@@ -62,7 +62,22 @@ public class ExtendedSqlSource implements SqlSource {
         }
     }
 
-    public static Object findMasterValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) {
+    public static Object findColumnValue(String column, ShardContext context) {
+        List<ColumnValue> columnValues = context.iSqlParser.getColumns();
+        for (int i = 0; i < columnValues.size(); i++) {
+            ColumnValue columnValue = columnValues.get(i);
+            if (columnValue.column.equals(column)) {
+                int start = columnValues.subList(0, i).stream().collect(Collectors.summingInt(value -> value.placeHolderCount));
+                if (columnValue.placeHolderCount == 1)
+                    return context.jdbcArgs.get(start);
+                return context.jdbcArgs.subList(start, start + columnValue.placeHolderCount);
+            }
+        }
+        return null;
+    }
+
+    @Deprecated
+    private static Object findColumnValue(ISqlParser iSqlParser, BoundSql boundSql, TableConfig tableConfig) {
         /** Select/Update/Delete -> columns from "where" clause */
         if (boundSql.getParameterObject() instanceof MapperMethod.ParamMap) {
             return getColumnValue(tableConfig.getMasterColumn(), iSqlParser, boundSql);
@@ -77,20 +92,6 @@ public class ExtendedSqlSource implements SqlSource {
                         throw new SqlParseException("failed to parse property:" + boundSql.getParameterMappings().get(i).getProperty());
                     }
                 }
-            }
-        }
-        return null;
-    }
-
-    public static Object findMasterValue(ISqlParser iSqlParser, TableConfig tableConfig, ShardContext context) {
-        List<ColumnValue> columnValues = iSqlParser.getColumns();
-        for (int i = 0; i < columnValues.size(); i++) {
-            ColumnValue columnValue = columnValues.get(i);
-            if (columnValue.column.equals(tableConfig.getMasterColumn())) {
-                int start = columnValues.subList(0, i).stream().collect(Collectors.summingInt(value -> value.placeHolderCount));
-                if (columnValue.placeHolderCount == 1)
-                    return context.jdbcArgs.get(start);
-                return context.jdbcArgs.subList(start, start + columnValue.placeHolderCount);
             }
         }
         return null;

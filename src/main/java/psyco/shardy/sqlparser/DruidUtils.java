@@ -104,23 +104,27 @@ public class DruidUtils {
             List<ColumnValue> re = ((SQLUpdateStatement) stmt).getItems().stream()
                     .map(sqlUpdateSetItem -> new ColumnValue(sqlUpdateSetItem.getColumn().toString(), 1))
                     .collect(Collectors.toList());
-            re.addAll(getColumnsFromWhere((SQLBinaryOpExpr) getWhere(stmt)));
+            re.addAll(getColumnsFromWhere(getWhere(stmt)));
             return re;
         }
-        return getColumnsFromWhere((SQLBinaryOpExpr) getWhere(stmt));
+        return getColumnsFromWhere(getWhere(stmt));
     }
 
-    public static List<ColumnValue> getColumnsFromWhere(SQLBinaryOpExpr where) {
-//        return Lists.reverse(SQLUtils.split(where).stream()
-//                .map(sqlExpr -> calValueCount(sqlExpr))
-//                .collect(Collectors.toList()));
-        return getColsFromWhere(where);
-    }
 
-    public static List<ColumnValue> getColsFromWhere(SQLExpr where) {
+    public static List<ColumnValue> getColumnsFromWhere(SQLExpr where) {
         List<ColumnValue> re = Lists.newLinkedList();
         flatSqlExpr(where, sqlExpr -> re.add(calValueCount(sqlExpr)));
         return re;
+    }
+
+    @Deprecated
+    /***
+     * SQLUtils.split has issues
+     */
+    static List<ColumnValue> getColumnsFromWhereOld(SQLExpr where) {
+        return Lists.reverse(SQLUtils.split((SQLBinaryOpExpr) where).stream()
+                .map(sqlExpr -> calValueCount(sqlExpr))
+                .collect(Collectors.toList()));
     }
 
     private static ColumnValue calValueCount(SQLExpr sqlExpr) {

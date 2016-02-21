@@ -58,7 +58,7 @@ public class ShardInterceptor implements Interceptor {
             Object masterValue = findMasterValue(iSqlParser, boundSql, tableConfig);
             if (masterValue == null)
                 throw new SqlParseException("no master value is found:" + sql);
-            ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardStrategyContext(masterValue, table));
+            ShardResult re = tableConfig.getShardStrategy().map(new ShardStrategyContext(masterValue, table));
             String destTable = re.getTableName();
             if (StringUtils.isNotBlank(destTable)) {
                 iSqlParser.setTableName(re.getTableName());

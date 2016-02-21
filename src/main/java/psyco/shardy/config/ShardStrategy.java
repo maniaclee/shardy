@@ -5,5 +5,5 @@ package psyco.shardy.config;
  */
 public interface ShardStrategy {
 
-    ShardResult indexTableByColumn(ShardStrategyContext context);
+    ShardResult map(ShardStrategyContext context);
 }

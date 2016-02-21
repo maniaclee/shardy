@@ -5,5 +5,4 @@ package psyco.shardy.config;
  */
 public interface SlaveMapping {
 
-    SlaveMappingResult map(Object slaveColumn, String table);
 }

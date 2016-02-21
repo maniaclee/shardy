@@ -15,6 +15,7 @@ import psyco.shardy.sqlparser.ISqlParser;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by lipeng on 16/2/19.
@@ -60,7 +61,7 @@ public class ShardExecutor {
             Multimap<String, Object> shards = parseValueList(masters, tableConfig);
             return execSqlList(shards, shardContext);
         }
-        ShardResult re = tableConfig.getShardStrategy().indexTableByColumn(new ShardStrategyContext(masterValue, tableConfig.getTable()));
+        ShardResult re = tableConfig.getShardStrategy().map(new ShardStrategyContext(masterValue, tableConfig.getTable()));
 
         if (!shard(shardContext.iSqlParser, re))
             throw new ShardException("no table found to shard for sql + " + shardContext.iSqlParser.getSqlOriginal());
@@ -71,33 +72,24 @@ public class ShardExecutor {
         if (slaveValue == null)
             throw new SqlParseException("no slave value is found:" + shardContext.boundSql.getSql());
         String table = tableConfig.getTable();
-        if (slaveValue instanceof List) {
-            List slaves = (List) slaveValue;
-            if (slaves.isEmpty())
-                return shardContext.invocation.proceed();
-            Multimap<String, Object> re = parseValueList4slave(slaves, slaveConfig, tableConfig);
-            return execSqlList(re, shardContext);
+        if (slaveConfig.getSlaveMapping() instanceof SlaveToMasterMapping) {
+            SlaveToMasterMapping slaveToMasterMapping = (SlaveToMasterMapping) slaveConfig.getSlaveMapping();
+            Object master = null;
+            if (slaveValue instanceof List) {
+                master = ((List) slaveValue).stream().map(e -> slaveToMasterMapping.map(e, table)).filter(a -> a != null).collect(Collectors.toList());
+            } else {
+                master = slaveToMasterMapping.map(slaveValue, table);
+            }
+            return routeMasterColumn(master, shardContext, tableConfig);
+        } else if (slaveConfig.getSlaveMapping() instanceof SlaveToTableMapping) {
+            SlaveToTableMapping slaveToTableMapping = (SlaveToTableMapping) slaveConfig.getSlaveMapping();
+            if (slaveValue instanceof List) {
+                Multimap<String, Object> parseValueList4slave = parseValueList4slave((List) slaveValue, slaveConfig, tableConfig);
+                return execSqlList(parseValueList4slave, shardContext);
+            }
+            return shardResult(shardContext, slaveToTableMapping.map(new ShardStrategyContext(slaveValue, table)));
         }
-        SlaveMappingResult slaveMappingResult = slaveConfig.getSlaveMapping().map(slaveValue, table);
-        /** slave to master */
-        if (slaveMappingResult != null && StringUtils.isBlank(slaveMappingResult.getTableName()) && slaveMappingResult.getMaster() != null) {
-            return routeMasterColumn(slaveMappingResult.getMaster(), shardContext, tableConfig);
-        }
-        if (!shard(shardContext.iSqlParser, slaveMappingResult))
-            throw new ShardException("no table found to shard of slave for sql + " + shardContext.iSqlParser.getSqlOriginal());
-        return shardContext.invocation.proceed();
-    }
-
-    private static String findTableForSlave(Object slaveValue, SlaveConfig slaveConfig, String table, TableConfig tableConfig) {
-        SlaveMappingResult slaveMappingResult = slaveConfig.getSlaveMapping().map(slaveValue, table);
-        if (StringUtils.isNoneBlank(slaveMappingResult.getTableName()))
-            return slaveMappingResult.getTableName();
-        if (slaveMappingResult.getMaster() != null) {
-            ShardResult shardResult = tableConfig.getShardStrategy().indexTableByColumn(new ShardStrategyContext(slaveMappingResult.getMaster(), tableConfig.getTable()));
-            if (shardResult != null)
-                return shardResult.getTableName();
-        }
-        return null;
+        throw new ShardException("unknow SlaveConfig Type");
     }
 
     private Object execSqlList(Multimap<String, Object> shards, ShardContext shardContext) throws InvocationTargetException, IllegalAccessException {
@@ -112,6 +104,12 @@ public class ShardExecutor {
         throw new ShardException("List operation is not supported for sql type :" + mappedStatement.getSqlCommandType());
     }
 
+
+    private Object shardResult(ShardContext shardContext, ShardResult shardResult) throws InvocationTargetException, IllegalAccessException {
+        if (!shard(shardContext.iSqlParser, shardResult))
+            throw new ShardException("no table found to shard of slave for sql + " + shardContext.iSqlParser.getSqlOriginal());
+        return shardContext.invocation.proceed();
+    }
 
     private boolean shard(ISqlParser iSqlParser, ShardResult shardResult) {
         return shard(iSqlParser, shardResult.getTableName(), shardResult.getDbName());
@@ -175,7 +173,7 @@ public class ShardExecutor {
     public static Multimap<String, Object> parseValueList(List masters, TableConfig config) {
         Multimap<String, Object> myMultimap = ArrayListMultimap.create();
         for (Object o : masters) {
-            ShardResult shardResult = config.getShardStrategy().indexTableByColumn(new ShardStrategyContext(o, config.getTable()));
+            ShardResult shardResult = config.getShardStrategy().map(new ShardStrategyContext(o, config.getTable()));
             if (StringUtils.isNoneBlank(shardResult.getTableName()))
                 myMultimap.put(shardResult.getTableName(), o);
         }
@@ -183,11 +181,12 @@ public class ShardExecutor {
     }
 
     public static Multimap<String, Object> parseValueList4slave(List slaveValue, SlaveConfig slaveConfig, TableConfig tableConfig) {
+        ShardStrategy shardStrategy = (ShardStrategy) slaveConfig.getSlaveMapping();
         Multimap<String, Object> re = ArrayListMultimap.create();
         for (Object a : slaveValue) {
-            String tableResult = findTableForSlave(a, slaveConfig, tableConfig.getTable(), tableConfig);
+            ShardResult tableResult = shardStrategy.map(new ShardStrategyContext(a, tableConfig.getTable()));
             if (tableResult != null)
-                re.put(tableResult, a);
+                re.put(tableResult.getTableName(), a);
         }
         return re;
     }

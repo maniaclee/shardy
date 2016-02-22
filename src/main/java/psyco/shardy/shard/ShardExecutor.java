@@ -70,9 +70,9 @@ public class ShardExecutor {
             SlaveToMasterMapping slaveToMasterMapping = (SlaveToMasterMapping) slaveConfig.getSlaveMapping();
             Object master = null;
             if (slaveValue instanceof List) {
-                master = ((List) slaveValue).stream().map(e -> slaveToMasterMapping.map(e, table)).filter(a -> a != null).collect(Collectors.toList());
+                master = ((List) slaveValue).stream().map(e -> slaveToMasterMapping.map(new ShardStrategyContext(e, table))).filter(a -> a != null).collect(Collectors.toList());
             } else {
-                master = slaveToMasterMapping.map(slaveValue, table);
+                master = slaveToMasterMapping.map(new ShardStrategyContext(slaveValue, table));
             }
             return routeMasterColumn(master, shardContext);
         } else if (slaveConfig.getSlaveMapping() instanceof SlaveToTableMapping) {

@@ -1,6 +1,6 @@
 package psyco.shardy.config.builder;
 
-import psyco.shardy.config.ShardStrategy;
+import psyco.shardy.config.strategy.ShardStrategy;
 import psyco.shardy.config.SlaveConfig;
 import psyco.shardy.config.TableConfig;
 

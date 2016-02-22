@@ -1,6 +1,7 @@
 package psyco.shardy.config;
 
 import org.apache.commons.lang3.StringUtils;
+import psyco.shardy.config.strategy.ShardStrategy;
 
 import java.util.List;
 

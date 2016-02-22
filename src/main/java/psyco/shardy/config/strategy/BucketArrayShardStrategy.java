@@ -3,7 +3,6 @@ package psyco.shardy.config.strategy;
 
 import psyco.shardy.ShardException;
 import psyco.shardy.config.ShardResult;
-import psyco.shardy.config.ShardStrategy;
 import psyco.shardy.config.ShardStrategyContext;
 
 import java.util.Arrays;

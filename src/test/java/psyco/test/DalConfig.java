@@ -25,6 +25,7 @@ import psyco.shardy.config.*;
 import psyco.shardy.config.builder.SlaveConfigBuilder;
 import psyco.shardy.config.builder.TableConfigBuilder;
 import psyco.shardy.config.strategy.BucketArrayShardStrategy;
+import psyco.shardy.config.strategy.ShardStrategy;
 import psyco.shardy.spring.ShardInterceptorFactoryBean;
 
 import java.sql.SQLException;
@@ -53,7 +54,7 @@ public class DalConfig {
                 .slaveConfigs(Lists.newArrayList(
                         SlaveConfigBuilder.instance()
                                 .setSlaveColumn("name")
-                                .setSlaveMapping(new SlaveToTableMapping() {
+                                .setSlaveMapping(new ShardStrategy() {
                                     @Override
                                     public ShardResult map(ShardStrategyContext context) {
                                         Object slaveColumn = context.getColumnValue();

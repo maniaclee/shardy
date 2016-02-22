@@ -1,18 +1,19 @@
 package psyco.shardy.config;
 
 import org.apache.commons.lang3.StringUtils;
+import psyco.shardy.config.strategy.IShardStrategy;
 
 /**
  * Created by peng on 16/2/20.
  */
 public class SlaveConfig {
     String slaveColumn;
-    SlaveMapping slaveMapping;
+    IShardStrategy slaveMapping;
 
     public SlaveConfig() {
     }
 
-    public SlaveConfig(String slaveColumn, SlaveMapping slaveMapping) {
+    public SlaveConfig(String slaveColumn, IShardStrategy slaveMapping) {
         this.slaveColumn = slaveColumn;
         this.slaveMapping = slaveMapping;
     }
@@ -29,12 +30,11 @@ public class SlaveConfig {
         this.slaveColumn = slaveColumn;
     }
 
-    public SlaveMapping getSlaveMapping() {
+    public IShardStrategy getSlaveMapping() {
         return slaveMapping;
     }
 
-    public void setSlaveMapping(SlaveMapping slaveMapping) {
+    public void setSlaveMapping(IShardStrategy slaveMapping) {
         this.slaveMapping = slaveMapping;
     }
-
 }

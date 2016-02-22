@@ -10,6 +10,8 @@ import org.apache.ibatis.plugin.Invocation;
 import psyco.shardy.ShardException;
 import psyco.shardy.SqlParseException;
 import psyco.shardy.config.*;
+import psyco.shardy.config.strategy.ShardStrategy;
+import psyco.shardy.config.strategy.SlaveToMasterMapping;
 import psyco.shardy.datasource.DynamicDataSource;
 import psyco.shardy.sqlparser.ISqlParser;
 
@@ -75,15 +77,15 @@ public class ShardExecutor {
                 master = slaveToMasterMapping.map(new ShardStrategyContext(slaveValue, table));
             }
             return routeMasterColumn(master, shardContext);
-        } else if (slaveConfig.getSlaveMapping() instanceof SlaveToTableMapping) {
-            SlaveToTableMapping slaveToTableMapping = (SlaveToTableMapping) slaveConfig.getSlaveMapping();
+        } else if (slaveConfig.getSlaveMapping() instanceof ShardStrategy) {
+            ShardStrategy slaveToTableMapping = (ShardStrategy) slaveConfig.getSlaveMapping();
             if (slaveValue instanceof List) {
                 Multimap<String, Object> parseValueList4slave = parseValueList4slave((List) slaveValue, slaveConfig, shardContext.tableConfig);
                 return execSqlList(parseValueList4slave, shardContext);
             }
             return shardResult(shardContext, slaveToTableMapping.map(new ShardStrategyContext(slaveValue, table)));
         }
-        throw new ShardException("unknow SlaveConfig Type");
+        throw new ShardException("unsupported SlaveConfig Type : " + slaveConfig.getSlaveMapping().getClass().getName());
     }
 
     private Object execSqlList(Multimap<String, Object> shards, ShardContext shardContext) throws InvocationTargetException, IllegalAccessException {

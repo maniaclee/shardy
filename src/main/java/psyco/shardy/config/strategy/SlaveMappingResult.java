@@ -1,4 +1,6 @@
-package psyco.shardy.config;
+package psyco.shardy.config.strategy;
+
+import psyco.shardy.config.ShardResult;
 
 /**
  * Created by peng on 16/2/20.

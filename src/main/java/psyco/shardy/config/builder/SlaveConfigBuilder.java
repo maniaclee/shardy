@@ -1,7 +1,7 @@
 package psyco.shardy.config.builder;
 
+import psyco.shardy.config.strategy.IShardStrategy;
 import psyco.shardy.config.SlaveConfig;
-import psyco.shardy.config.SlaveMapping;
 
 /**
  * Created by peng on 16/2/20.
@@ -21,7 +21,7 @@ public class SlaveConfigBuilder {
         return this;
     }
 
-    public SlaveConfigBuilder setSlaveMapping(SlaveMapping slaveMapping) {
+    public SlaveConfigBuilder setSlaveMapping(IShardStrategy slaveMapping) {
         slaveConfig.setSlaveMapping(slaveMapping);
         return this;
     }

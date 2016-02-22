@@ -1,5 +1,6 @@
 package psyco.shardy.config;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.plugin.Invocation;
@@ -20,6 +21,9 @@ public class ShardContext {
     public List jdbcArgs;
     public ISqlParser iSqlParser;
 
+    public final String table; //could be null
+    public TableConfig tableConfig;//could be null
+
     public ShardContext(MappedStatement mappedStatement, Object arg, Invocation invocation) {
         this.mappedStatement = mappedStatement;
         this.arg = arg;
@@ -28,5 +32,13 @@ public class ShardContext {
         this.boundSql = extendedSqlSource.buildBoundSql(arg);
         jdbcArgs = JdbcParameterHandler.getParameters(mappedStatement, arg, boundSql);
         this.iSqlParser = ExtendedSqlSource.createISqlParser(boundSql.getSql());
+
+        /** if no table found , let go , maybe some wired but legal sql or mybatis sql like "select #{id}" in SelectKey */
+        this.table = iSqlParser.getTableName();
+        this.tableConfig = ShardConfig.getTableConfig(table);
+    }
+
+    public boolean canShard() {
+        return StringUtils.isNoneBlank(table) && tableConfig != null;
     }
 }

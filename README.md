@@ -59,11 +59,33 @@ If you want a tableName to shard by a column,provide a TableConfig bean like thi
             @Override
             public ShardResult indexTableByColumn(ShardStrategyContext context) {
               	//how to route tableName by column value
-                long columnValue = (long) context.getColumnValue();
-                return new ShardResult(context.getTable() + "_" + columnValue/10000,null);
+                return new ShardResult(context.getTable() + "_" + (long) context.getColumnValue()/10000,null);
             }
         });
         return config;
+    }
+public TableConfig User() {
+        return TableConfigBuilder.instance()
+                .table("User")
+                .masterColumn("id")
+                .shardStrategy(new BucketArrayShardStrategy(0, new long[]{10000000, 10000000}, true))
+                .slaveConfigs(Lists.newArrayList(
+                        SlaveConfigBuilder.instance()
+                                .setSlaveColumn("name")
+                                .setSlaveMapping(new SlaveToTableMapping() {
+                                    @Override
+                                    public ShardResult map(ShardStrategyContext context) {
+                                        Object slaveColumn = context.getColumnValue();
+                                        String table = context.getTable();
+                                        if (!(slaveColumn instanceof String))
+                                            throw new ShardException("error slave");
+                                        if (slaveColumn.toString().startsWith("shard"))
+                                            table += "_0";
+                                        return new ShardResult(table+"_" + ((long)context.getColumnValue()/5000), null);
+                                    }
+                                })
+                                .build()))
+                .build();
     }
 ```
 

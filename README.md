@@ -31,7 +31,7 @@ Goal:	Shard quietly base on tableName , never change the sql.
 If you want a tableName to shard by a column,provide a TableConfig bean like this:
 
 ``` java
-@Bean
+	@Bean
     public TableConfig User() {
         return TableConfigBuilder.instance()
                 .table("User")

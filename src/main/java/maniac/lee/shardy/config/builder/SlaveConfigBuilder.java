@@ -1,7 +1,8 @@
 package maniac.lee.shardy.config.builder;
 
-import maniac.lee.shardy.config.strategy.IShardStrategy;
 import maniac.lee.shardy.config.SlaveConfig;
+import maniac.lee.shardy.config.strategy.ShardStrategy;
+import maniac.lee.shardy.config.strategy.SlaveToMasterMapping;
 
 /**
  * Created by peng on 16/2/20.
@@ -21,7 +22,12 @@ public class SlaveConfigBuilder {
         return this;
     }
 
-    public SlaveConfigBuilder setSlaveMapping(IShardStrategy slaveMapping) {
+    public SlaveConfigBuilder setSlaveToTableMapping(ShardStrategy slaveMapping) {
+        slaveConfig.setSlaveMapping(slaveMapping);
+        return this;
+    }
+
+    public SlaveConfigBuilder setSlaveToMasterMapping(SlaveToMasterMapping slaveMapping) {
         slaveConfig.setSlaveMapping(slaveMapping);
         return this;
     }

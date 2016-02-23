@@ -14,7 +14,7 @@ import org.apache.ibatis.mapping.MappedStatement;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -72,8 +72,7 @@ public class ShardExecutor {
     private Object routeColumnByStrategy(Object masterValue, ShardContext shardContext, ShardStrategy shardStrategy) throws InvocationTargetException, IllegalAccessException {
         if (masterValue == null)
             throw new SqlParseException("no master value is found:" + shardContext.boundSql.getSql());
-        TableConfig tableConfig = shardContext.tableConfig;
-        String table = tableConfig.getTable();
+        String table = shardContext.tableConfig.getTable();
         if (masterValue instanceof List) {
             /** only select first to route table & all the master values must be in the SAME table */
             List<ShardResult> re = Lists.newLinkedList();
@@ -81,7 +80,7 @@ public class ShardExecutor {
                 re.add(shardStrategy.map(new ShardStrategyContext(o, table)));
             return execSqlList(shardContext, re.toArray(new ShardResult[0]));
         }
-        return execSqlList(shardContext, tableConfig.getShardStrategy().map(new ShardStrategyContext(masterValue, table)));
+        return execSqlList(shardContext, shardStrategy.map(new ShardStrategyContext(masterValue, table)));
     }
 
     private Object execSqlList(ShardContext shardContext, ShardResult... shards) throws InvocationTargetException, IllegalAccessException {
@@ -93,25 +92,26 @@ public class ShardExecutor {
             case SELECT:
                 return execSelect(shardResultMap, shardContext);
             case DELETE:
+            case INSERT:
             case UPDATE:
                 return execUpdate(shardResultMap, shardContext);
         }
-        throw new ShardException("List operation is not supported for sql type :" + mappedStatement.getSqlCommandType());
+        throw new ShardException("not supported for sql type :" + mappedStatement.getSqlCommandType());
     }
 
     public static Object execSelect(ShardResultMap shardResultMap, ShardContext context) throws InvocationTargetException, IllegalAccessException {
         List re = Lists.newLinkedList();
-        execSql(shardResultMap, context, (o, list) -> list.addAll((List) o), re);
+        execSql(shardResultMap, context, o -> re.addAll((List) o));
         return re;
     }
 
     public static Object execUpdate(ShardResultMap shardResultMap, ShardContext context) throws InvocationTargetException, IllegalAccessException {
-        int re = 0;
-        execSql(shardResultMap, context, (o, result) -> result += toInt(o), re);
-        return re;
+        int[] re = {0};
+        execSql(shardResultMap, context, o -> re[0] += toInt(o));
+        return re[0];
     }
 
-    public static <T> void execSql(ShardResultMap shardResultMap, ShardContext context, BiConsumer<Object, T> f, T consumerContext) throws InvocationTargetException, IllegalAccessException {
+    public static void execSql(ShardResultMap shardResultMap, ShardContext context, Consumer<Object> f) throws InvocationTargetException, IllegalAccessException {
         for (String db : shardResultMap.getDbs()) {
             shardDb(db);
             for (String table : shardResultMap.getTables(db)) {
@@ -121,7 +121,7 @@ public class ShardExecutor {
                 Transfer.setSqlShard(sqlResult);
                 Object result = context.invoke();
                 if (result != null)
-                    f.accept(result, consumerContext);
+                    f.accept(result);
             }
         }
     }

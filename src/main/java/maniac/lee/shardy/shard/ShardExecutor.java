@@ -6,17 +6,15 @@ import com.google.common.collect.Multimap;
 import maniac.lee.shardy.ShardException;
 import maniac.lee.shardy.SqlParseException;
 import maniac.lee.shardy.config.*;
-import maniac.lee.shardy.datasource.DynamicDataSource;
-import maniac.lee.shardy.sqlparser.ISqlParser;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.plugin.Invocation;
 import maniac.lee.shardy.config.strategy.ShardStrategy;
 import maniac.lee.shardy.config.strategy.SlaveToMasterMapping;
+import maniac.lee.shardy.datasource.DynamicDataSource;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.ibatis.mapping.MappedStatement;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -27,114 +25,108 @@ public class ShardExecutor {
     public Object exec(ShardContext shardContext) throws InvocationTargetException, IllegalAccessException {
         /** if no table found , let go , maybe some wired but legal sql or mybatis sql like "select #{id}" in SelectKey */
         if (!shardContext.canShard())
-            return shardContext.invocation.proceed();
+            return shardContext.invoke();
 
         TableConfig tableConfig = shardContext.tableConfig;
         /** -------- master dimension ----------- */
         Object masterValue = ExtendedSqlSource.findColumnValue(tableConfig.getMasterColumn(), shardContext);
         if (masterValue != null)
-            return routeMasterColumn(masterValue, shardContext);
+            return routeMaster(masterValue, shardContext);
 
         /** -------- slave dimension ----------- */
         if (tableConfig.getSlaveConfigs() != null) {
             for (SlaveConfig slaveConfig : tableConfig.getSlaveConfigs()) {
                 Object slaveValue = ExtendedSqlSource.findColumnValue(slaveConfig.getSlaveColumn(), shardContext);
-                return routeSlaveValues(slaveValue, shardContext, slaveConfig);
+                return routeSlave(slaveValue, shardContext, slaveConfig);
             }
         }
         throw new ShardException("no table to route for sql:" + shardContext.iSqlParser.getSqlOriginal());
     }
 
-    private Object routeMasterColumn(Object masterValue, ShardContext shardContext) throws InvocationTargetException, IllegalAccessException {
-        if (masterValue == null)
-            throw new SqlParseException("no master value is found:" + shardContext.boundSql.getSql());
-        TableConfig tableConfig = shardContext.tableConfig;
-        if (masterValue instanceof List) {
-            List masters = (List) masterValue;
-            if (masters.isEmpty())
-                return shardContext.invocation.proceed();
-            /** only select first to route table & all the master values must be in the SAME table */
-            ShardResultMap shardResultMap = ShardResultMap.create();
-            masters.stream()
-                    .map(e -> tableConfig.getShardStrategy().map(new ShardStrategyContext(masterValue, tableConfig.getTable())))
-                    .forEach( o-> ((ShardResult) o).getDbName());
-            Multimap<String, Object> shards = parseValueList(masters, tableConfig);
-            return execSqlList(shards, shardContext);
-        }
-        ShardResult re = tableConfig.getShardStrategy().map(new ShardStrategyContext(masterValue, tableConfig.getTable()));
-
-        if (!shard(shardContext.iSqlParser, re))
-            throw new ShardException("no table found to shard for sql + " + shardContext.iSqlParser.getSqlOriginal());
-        return shardContext.invocation.proceed();
+    private Object routeMaster(Object masterValue, ShardContext shardContext) throws InvocationTargetException, IllegalAccessException {
+        return routeColumnByStrategy(masterValue, shardContext, shardContext.tableConfig.getShardStrategy());
     }
 
-    private Object routeSlaveValues(Object slaveValue, ShardContext shardContext, SlaveConfig slaveConfig) throws InvocationTargetException, IllegalAccessException {
+
+    private Object routeSlave(Object slaveValue, ShardContext shardContext, SlaveConfig slaveConfig) throws InvocationTargetException, IllegalAccessException {
         if (slaveValue == null)
             throw new SqlParseException("no slave value is found:" + shardContext.boundSql.getSql());
+
+        if (slaveConfig.getSlaveMapping() instanceof ShardStrategy)
+            return routeColumnByStrategy(slaveValue, shardContext, ((ShardStrategy) slaveConfig.getSlaveMapping()));
+
         String table = shardContext.table;
         if (slaveConfig.getSlaveMapping() instanceof SlaveToMasterMapping) {
             SlaveToMasterMapping slaveToMasterMapping = (SlaveToMasterMapping) slaveConfig.getSlaveMapping();
-            Object master = null;
+            Object master;
             if (slaveValue instanceof List) {
                 master = ((List) slaveValue).stream().map(e -> slaveToMasterMapping.map(new ShardStrategyContext(e, table))).filter(a -> a != null).collect(Collectors.toList());
             } else {
                 master = slaveToMasterMapping.map(new ShardStrategyContext(slaveValue, table));
             }
-            return routeMasterColumn(master, shardContext);
-        } else if (slaveConfig.getSlaveMapping() instanceof ShardStrategy) {
-            ShardStrategy slaveToTableMapping = (ShardStrategy) slaveConfig.getSlaveMapping();
-            if (slaveValue instanceof List) {
-                Multimap<String, Object> parseValueList4slave = parseValueList4slave((List) slaveValue, slaveConfig, shardContext.tableConfig);
-                return execSqlList(parseValueList4slave, shardContext);
-            }
-            return shardResult(shardContext, slaveToTableMapping.map(new ShardStrategyContext(slaveValue, table)));
+            return routeMaster(master, shardContext);
         }
         throw new ShardException("unsupported SlaveConfig Type : " + slaveConfig.getSlaveMapping().getClass().getName());
     }
 
-    private Object execSqlList(Multimap<String, Object> shards, ShardContext shardContext) throws InvocationTargetException, IllegalAccessException {
-        if (shards == null || shards.isEmpty())
-            return null;
+    private Object routeColumnByStrategy(Object masterValue, ShardContext shardContext, ShardStrategy shardStrategy) throws InvocationTargetException, IllegalAccessException {
+        if (masterValue == null)
+            throw new SqlParseException("no master value is found:" + shardContext.boundSql.getSql());
+        TableConfig tableConfig = shardContext.tableConfig;
+        String table = tableConfig.getTable();
+        if (masterValue instanceof List) {
+            /** only select first to route table & all the master values must be in the SAME table */
+            List<ShardResult> re = Lists.newLinkedList();
+            for (Object o : (List) masterValue)
+                re.add(shardStrategy.map(new ShardStrategyContext(o, table)));
+            return execSqlList(shardContext, re.toArray(new ShardResult[0]));
+        }
+        return execSqlList(shardContext, tableConfig.getShardStrategy().map(new ShardStrategyContext(masterValue, table)));
+    }
+
+    private Object execSqlList(ShardContext shardContext, ShardResult... shards) throws InvocationTargetException, IllegalAccessException {
+        if (shards == null || shards.length == 0)
+            return shardContext.invoke();
+        ShardResultMap shardResultMap = ShardResultMap.create(Lists.newArrayList(shards));
         MappedStatement mappedStatement = shardContext.mappedStatement;
-        if (mappedStatement.getSqlCommandType() == SqlCommandType.SELECT) {
-            return convertSelect(shards, shardContext.iSqlParser, shardContext.invocation);
-        } else if (mappedStatement.getSqlCommandType() == SqlCommandType.DELETE || mappedStatement.getSqlCommandType() == SqlCommandType.UPDATE) {
-            return convertUpdate(shards, shardContext.iSqlParser, shardContext.invocation);
+        switch (mappedStatement.getSqlCommandType()) {
+            case SELECT:
+                return execSelect(shardResultMap, shardContext);
+            case DELETE:
+            case UPDATE:
+                return execUpdate(shardResultMap, shardContext);
         }
         throw new ShardException("List operation is not supported for sql type :" + mappedStatement.getSqlCommandType());
     }
 
-
-    private Object shardResult(ShardContext shardContext, ShardResult shardResult) throws InvocationTargetException, IllegalAccessException {
-        if (!shard(shardContext.iSqlParser, shardResult))
-            throw new ShardException("no table found to shard of slave for sql + " + shardContext.iSqlParser.getSqlOriginal());
-        return shardContext.invocation.proceed();
-    }
-
-    private boolean shard(ISqlParser iSqlParser, ShardResult shardResult) {
-        return shard(iSqlParser, shardResult.getTableName(), shardResult.getDbName());
-    }
-
-    private boolean shard(ISqlParser iSqlParser, String destTable, String db) {
-        boolean re = shardTable(iSqlParser, destTable);
-        if (re)
-            shardDb(db);
+    public static Object execSelect(ShardResultMap shardResultMap, ShardContext context) throws InvocationTargetException, IllegalAccessException {
+        List re = Lists.newLinkedList();
+        execSql(shardResultMap, context, (o, list) -> list.addAll((List) o), re);
         return re;
     }
 
-
-    private boolean shardTable(ISqlParser iSqlParser, String destTable) {
-        if (StringUtils.isNotBlank(destTable)) {
-            iSqlParser.setTableName(destTable);
-            String sqlResult = iSqlParser.toSql();
-            System.out.println("sqlResult->" + sqlResult);
-            Transfer.setSqlShard(sqlResult);
-            return true;
-        } else
-            return false;
+    public static Object execUpdate(ShardResultMap shardResultMap, ShardContext context) throws InvocationTargetException, IllegalAccessException {
+        int re = 0;
+        execSql(shardResultMap, context, (o, result) -> result += toInt(o), re);
+        return re;
     }
 
-    private void shardDb(String db) {
+    public static <T> void execSql(ShardResultMap shardResultMap, ShardContext context, BiConsumer<Object, T> f, T consumerContext) throws InvocationTargetException, IllegalAccessException {
+        for (String db : shardResultMap.getDbs()) {
+            shardDb(db);
+            for (String table : shardResultMap.getTables(db)) {
+                context.iSqlParser.setTableName(table);
+                /** don't worry about the parameter count,just changing the table will do */
+                String sqlResult = context.iSqlParser.toSql();
+                Transfer.setSqlShard(sqlResult);
+                Object result = context.invoke();
+                if (result != null)
+                    f.accept(result, consumerContext);
+            }
+        }
+    }
+
+    private static void shardDb(String db) {
         if (StringUtils.isNoneBlank(db)) {
             DynamicDataSource.setDb(db);
         } else {
@@ -142,33 +134,13 @@ public class ShardExecutor {
         }
     }
 
-    public static int convertUpdate(Multimap<String, Object> shards, ISqlParser iSqlParser, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
-        int re = 0;
-        for (String t : shards.keySet()) {
-            iSqlParser.setTableName(t);
-            /** don't worry about the parameter count,just changing the table will do */
-            String sqlResult = iSqlParser.toSql();
-            Transfer.setSqlShard(sqlResult);
-            int tmp = (int) invocation.proceed();
-            re += tmp;
-        }
-        return re;
+    private static int toInt(Object o) {
+        if (o == null)
+            return 0;
+        if (o instanceof Number)
+            return ((Number) o).intValue();
+        return 0;
     }
-
-    public static List convertSelect(Multimap<String, Object> shards, ISqlParser iSqlParser, Invocation invocation) throws InvocationTargetException, IllegalAccessException {
-        List re = Lists.newLinkedList();
-        for (String t : shards.keySet()) {
-            iSqlParser.setTableName(t);
-            /** don't worry about the parameter count,just changing the table will do */
-            String sqlResult = iSqlParser.toSql();
-            Transfer.setSqlShard(sqlResult);
-            List tmp = (List) invocation.proceed();
-            if (tmp != null)
-                re.addAll(tmp);
-        }
-        return re;
-    }
-
 
     public static Multimap<String, Object> parseValueList(List masters, TableConfig config) {
         Multimap<String, Object> myMultimap = ArrayListMultimap.create();

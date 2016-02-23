@@ -8,6 +8,7 @@ import maniac.lee.shardy.shard.ExtendedSqlSource;
 import maniac.lee.shardy.shard.JdbcParameterHandler;
 import maniac.lee.shardy.sqlparser.ISqlParser;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
 /**
@@ -40,5 +41,9 @@ public class ShardContext {
 
     public boolean canShard() {
         return StringUtils.isNoneBlank(table) && tableConfig != null;
+    }
+
+    public Object invoke() throws InvocationTargetException, IllegalAccessException {
+        return invocation.proceed();
     }
 }

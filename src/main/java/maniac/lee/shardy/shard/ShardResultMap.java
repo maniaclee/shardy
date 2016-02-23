@@ -3,6 +3,7 @@ package maniac.lee.shardy.shard;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import maniac.lee.shardy.config.ShardResult;
 
 import java.util.List;
 
@@ -18,6 +19,19 @@ public class ShardResultMap {
 
     public static ShardResultMap create() {
         return new ShardResultMap();
+    }
+
+    public static ShardResultMap create(Iterable<ShardResult> results) {
+        ShardResultMap re = create();
+        for (ShardResult result : results)
+            re.put(result.getDbName(), result.getTableName());
+        return re;
+    }
+
+    public static ShardResultMap create(ShardResult result) {
+        ShardResultMap re = create();
+        re.put(result.getDbName(), result.getTableName());
+        return re;
     }
 
     public ShardResultMap put(String db, String table) {

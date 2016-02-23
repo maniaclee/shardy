@@ -6,25 +6,6 @@ Goal:	Shard quietly base on tableName , never change the sql.
 
 ### Usage
 
-##### Maven import
-
-``` xml
- 	<dependencies>
-        <dependency>
-            <groupId>psyco</groupId>
-    		<artifactId>shardy</artifactId>
-    		<version>1.0-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
-
-    <repositories>
-        <repository>
-            <id>psyco4j-maven-repo</id>
-            <url>https://github.com/psyco4j/psyco4j-mvn-repo/tree/master/repository</url>
-        </repository>
-    </repositories>
-```
-
 
 
 ##### Config in Spring
@@ -50,46 +31,37 @@ Goal:	Shard quietly base on tableName , never change the sql.
 If you want a tableName to shard by a column,provide a TableConfig bean like this:
 
 ``` java
- 	@Bean
-    public TableConfig User() {
-        TableConfig config = new TableConfig();
-        config.setTable("User");	//set tableName to shard
-        config.setMasterColumn("id");//set tableName column to shard
-        config.setShardStrategy(new ShardStrategy() {
-            @Override
-            public ShardResult indexTableByColumn(ShardStrategyContext context) {
-              	//how to route tableName by column value
-                return new ShardResult(context.getTable() + "_" + (long) context.getColumnValue()/10000,null);
-            }
-        });
-        return config;
-    }
+
 public TableConfig User() {
         return TableConfigBuilder.instance()
                 .table("User")
                 .masterColumn("id")
-                .shardStrategy(new BucketArrayShardStrategy(0, new long[]{10000000, 10000000}, true))
-                .slaveConfigs(Lists.newArrayList(
-                        SlaveConfigBuilder.instance()
-                                .setSlaveColumn("name")
-                                .setSlaveMapping(new SlaveToTableMapping() {
-                                    @Override
-                                    public ShardResult map(ShardStrategyContext context) {
-                                        Object slaveColumn = context.getColumnValue();
-                                        String table = context.getTable();
-                                        if (!(slaveColumn instanceof String))
-                                            throw new ShardException("error slave");
-                                        if (slaveColumn.toString().startsWith("shard"))
-                                            table += "_0";
-                                        return new ShardResult(table+"_" + ((long)context.getColumnValue()/5000), null);
-                                    }
-                                })
+                .setSlaveToTableMapping(context -> new ShardResult(context.getTable() + "_" + ((Integer) context.getColumnValue()) / 1000, null))
                                 .build()))
                 .build();
     }
 ```
 
 That's done. You don't need to change your sql at all.
+
+##### Maven import
+
+``` xml
+ 	<dependencies>
+        <dependency>
+            <groupId>maniaclee</groupId>
+    		<artifactId>shardy</artifactId>
+    		<version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>maniaclee-mvn-repo</id>
+            <url>https://github.com/maniaclee/maniaclee-mvn-repo/tree/master/repository</url>
+        </repository>
+    </repositories>
+```
 
 ### Requirements
 

@@ -54,6 +54,10 @@ public class ShardExecutor {
             if (masters.isEmpty())
                 return shardContext.invocation.proceed();
             /** only select first to route table & all the master values must be in the SAME table */
+            ShardResultMap shardResultMap = ShardResultMap.create();
+            masters.stream()
+                    .map(e -> tableConfig.getShardStrategy().map(new ShardStrategyContext(masterValue, tableConfig.getTable())))
+                    .forEach( o-> ((ShardResult) o).getDbName());
             Multimap<String, Object> shards = parseValueList(masters, tableConfig);
             return execSqlList(shards, shardContext);
         }

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="maniac.lee.shardy.test.dal.mapper.DaoLayer">
+    <update id="updateLevelByIds">
+        UPDATE   User
+        SET   level = #{l}
+        <where>
+            role= #{role}
+            and
+            id in
+            <foreach item="i" index="index" collection="idvars" open="(" separator="," close=")">
+                #{i}
+            </foreach>
+        </where>
+    </update>
+
+    <select id="findByIds" resultType="maniac.lee.shardy.test.dal.entity.User">
+        SELECT * from User
+        <where>
+            role= #{role}
+            and
+            id in
+            <foreach item="id" index="index" collection="ids" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+        </where>
+    </select>
+    <select id="findByNames" resultType="maniac.lee.shardy.test.dal.entity.User">
+        SELECT * from User
+        <where>
+            name in
+            <foreach item="n" index="index" collection="names" open="(" separator="," close=")">
+                #{n}
+            </foreach>
+        </where>
+    </select>
+</mapper>

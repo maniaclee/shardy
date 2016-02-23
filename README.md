@@ -31,15 +31,18 @@ Goal:	Shard quietly base on tableName , never change the sql.
 If you want a tableName to shard by a column,provide a TableConfig bean like this:
 
 ``` java
-
-public TableConfig User() {
+@Bean
+    public TableConfig User() {
         return TableConfigBuilder.instance()
                 .table("User")
                 .masterColumn("id")
-                .setSlaveToTableMapping(context -> new ShardResult(context.getTable() + "_" + ((Integer) context.getColumnValue()) / 1000, null))
+                .shardStrategy(new BucketArrayShardStrategy(0, new long[]{10000000, 10000000}, true))
+                .slaveConfigs(Lists.newArrayList(
+                        SlaveConfigBuilder.instance()
+                                .setSlaveColumn("name")
+                                .setSlaveToTableMapping(context -> new ShardResult(context.getTable() + "_" + ((Integer) context.getColumnValue()) / 1000, null))
                                 .build()))
                 .build();
-    }
 ```
 
 That's done. You don't need to change your sql at all.

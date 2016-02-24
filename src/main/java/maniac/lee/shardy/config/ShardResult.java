@@ -13,6 +13,10 @@ public class ShardResult {
         this.dbName = dbName;
     }
 
+    public static ShardResult create(String tableName, String dbName) {
+        return new ShardResult(tableName, dbName);
+    }
+
     public String getTableName() {
         return tableName;
     }

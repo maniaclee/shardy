@@ -39,7 +39,9 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
     @Override
     protected Object determineCurrentLookupKey() {
-        return getDb();
+        String s = dbHolder.get();
+        System.out.println("db get ->" + s);
+        return s;
     }
 
     public static void setDb(String db) {
@@ -51,7 +53,4 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
         dbHolder.remove();
     }
 
-    public static String getDb() {
-        return dbHolder.get();
-    }
 }

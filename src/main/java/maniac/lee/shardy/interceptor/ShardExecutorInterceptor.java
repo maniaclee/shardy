@@ -33,7 +33,7 @@ public class ShardExecutorInterceptor implements Interceptor {
         Object[] args = invocation.getArgs();
         MappedStatement mappedStatement = (MappedStatement) args[0];
         Object arg = args[1];
-
+        Object target = invocation.getTarget();
         /** init MappedStatement */
         updateMappedStatement(mappedStatement);
         ShardContext shardContext = new ShardContext(mappedStatement, arg, invocation);

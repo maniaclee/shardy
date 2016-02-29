@@ -1,5 +1,6 @@
 package maniac.lee.shardy.config;
 
+import maniac.lee.shardy.shard.Transfer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
@@ -45,5 +46,13 @@ public class ShardContext {
 
     public Object invoke() throws InvocationTargetException, IllegalAccessException {
         return invocation.proceed();
+    }
+
+    public Object invoke(String table) throws InvocationTargetException, IllegalAccessException {
+        iSqlParser.setTableName(table);
+        /** don't worry about the parameter count,just changing the table will do */
+        String sqlResult = iSqlParser.toSql();
+        Transfer.setSqlShard(sqlResult);
+        return invoke();
     }
 }

@@ -26,7 +26,13 @@ public class ShardExecutor {
         if (!shardContext.canShard())
             return shardContext.invoke();
 
+        /** force using table provided by @DbRouter */
+        String forceUseTable = Transfer.getForceUseTable();
+        if (StringUtils.isNotBlank(forceUseTable))
+            return shardContext.invoke(forceUseTable);
+
         TableConfig tableConfig = shardContext.tableConfig;
+
         /** -------- master dimension ----------- */
         Object masterValue = ExtendedSqlSource.findColumnValue(tableConfig.getMasterColumn(), shardContext);
         if (masterValue != null)
@@ -114,16 +120,13 @@ public class ShardExecutor {
         for (String db : shardResultMap.getDbs()) {
             shardDb(db);
             for (String table : shardResultMap.getTables(db)) {
-                context.iSqlParser.setTableName(table);
-                /** don't worry about the parameter count,just changing the table will do */
-                String sqlResult = context.iSqlParser.toSql();
-                Transfer.setSqlShard(sqlResult);
-                Object result = context.invoke();
+                Object result = context.invoke(table);
                 if (result != null)
                     f.accept(result);
             }
         }
     }
+
 
     private static void shardDb(String db) {
 //        if (StringUtils.isNoneBlank(db)) {

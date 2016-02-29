@@ -1,5 +1,6 @@
 package maniac.lee.shardy.datasource;
 
+import maniac.lee.shardy.shard.Transfer;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.aspectj.AspectJExpressionPointcut;
@@ -23,10 +24,12 @@ public class DbShardFactory {
                 DbRouter annotation = clz.getClass().getAnnotation(DbRouter.class);
                 if (annotation != null) {
                     DynamicDataSource.setDb(annotation.value());
+                    Transfer.setForceUseTable(annotation.useTable());
                 } else {
                     DbRouter dbRouter = methodInvocation.getMethod().getAnnotation(DbRouter.class);
                     if (dbRouter != null) {
                         DynamicDataSource.setDb(dbRouter.value());
+                        Transfer.setForceUseTable(dbRouter.useTable());
                     }
                 }
                 System.out.println("DB----> " + DynamicDataSource.getDb());
@@ -34,6 +37,7 @@ public class DbShardFactory {
                     return methodInvocation.proceed();
                 } finally {
                     DynamicDataSource.clearDb();
+                    Transfer.clear();
                 }
             }
         });

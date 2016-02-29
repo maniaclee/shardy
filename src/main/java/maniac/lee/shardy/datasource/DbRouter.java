@@ -9,5 +9,10 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface DbRouter {
-    String value();
+    /**
+     * db
+     */
+    String value() default "";
+
+    String useTable() default "";
 }

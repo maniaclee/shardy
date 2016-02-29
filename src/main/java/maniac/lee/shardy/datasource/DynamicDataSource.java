@@ -1,7 +1,10 @@
 package maniac.lee.shardy.datasource;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+
+import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by lipeng on 16/2/16.
@@ -10,44 +13,47 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
 
     private static ThreadLocal<String> dbHolder = new ThreadLocal<>();
 
-    private String DEFAULT_DB;
     private static DynamicDataSource instance;
 
-    private DynamicDataSource(String defaultDb) {
-        if (DEFAULT_DB != null)
-            throw new RuntimeException("DEFAULT_DB is already defined as : " + DEFAULT_DB);
-        DEFAULT_DB = defaultDb;
-    }
-
-    public static DynamicDataSource instance(String defaultDb) {
+    public static DynamicDataSource instance(DataSource defaultDb, Map<String, DataSource> map) {
         if (instance == null) {
             synchronized (DynamicDataSource.class) {
                 if (instance == null) {
-                    if (StringUtils.isBlank(defaultDb))
+                    if (defaultDb == null)
                         throw new RuntimeException(DynamicDataSource.class.getName() + " must have a default datasource name(id of datasource as spring bean)");
-                    instance = new DynamicDataSource(defaultDb);
+                    instance = new DynamicDataSource();
+                    instance.setDefaultTargetDataSource(defaultDb);
+                    instance.setTargetDataSources(convert(map));
                 }
             }
         }
         return instance;
     }
 
+    private static Map<Object, Object> convert(Map<String, DataSource> map) {
+        Map re = new HashMap<>();
+        for (String s : map.keySet()) re.put(s, map.get(s));
+        return re;
+    }
+
     public static void setDbDefault() {
-        if (instance.DEFAULT_DB != null)
-            setDb(instance.DEFAULT_DB);
+        clearDb();
     }
 
     @Override
     protected Object determineCurrentLookupKey() {
-        String s = dbHolder.get();
-        System.out.println("db get ->" + s);
-        return s;
+        return dbHolder.get();
     }
 
     public static void setDb(String db) {
         System.out.println("DB----->" + db);
         dbHolder.set(db);
     }
+
+    public static String getDb() {
+        return dbHolder.get();
+    }
+
 
     public static void clearDb() {
         dbHolder.remove();

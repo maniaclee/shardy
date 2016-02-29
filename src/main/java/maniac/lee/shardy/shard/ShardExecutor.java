@@ -8,7 +8,6 @@ import maniac.lee.shardy.SqlParseException;
 import maniac.lee.shardy.config.*;
 import maniac.lee.shardy.config.strategy.ShardStrategy;
 import maniac.lee.shardy.config.strategy.SlaveToMasterMapping;
-import maniac.lee.shardy.datasource.DynamicDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.mapping.MappedStatement;
 
@@ -127,11 +126,11 @@ public class ShardExecutor {
     }
 
     private static void shardDb(String db) {
-        if (StringUtils.isNoneBlank(db)) {
-            DynamicDataSource.setDb(db);
-        } else {
-            DynamicDataSource.setDbDefault();
-        }
+//        if (StringUtils.isNoneBlank(db)) {
+//            DynamicDataSource.setDb(db);
+//        } else {
+//            DynamicDataSource.setDbDefault();
+//        }
     }
 
     private static int toInt(Object o) {

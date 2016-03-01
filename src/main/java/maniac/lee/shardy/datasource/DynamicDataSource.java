@@ -46,7 +46,6 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
     }
 
     public static void setDb(String db) {
-        System.out.println("DB----->" + db);
         dbHolder.set(db);
     }
 

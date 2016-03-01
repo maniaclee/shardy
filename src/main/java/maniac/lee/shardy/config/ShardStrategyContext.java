@@ -30,6 +30,22 @@ public class ShardStrategyContext {
         return columnValue;
     }
 
+    public Number getColumnValueAsNumber() {
+        if (columnValue == null)
+            return 0;
+        if (columnValue instanceof Number) {
+            return (Number) columnValue;
+        }
+        return 0;
+    }
+
+    public int getColumnInt(){
+        return getColumnValueAsNumber().intValue();
+    }
+    public long getColumnLong(){
+        return getColumnValueAsNumber().longValue();
+    }
+
     public void setColumnValue(Object columnValue) {
         this.columnValue = columnValue;
     }

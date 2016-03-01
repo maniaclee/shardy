@@ -39,7 +39,7 @@ public class BucketArrayShardStrategy implements ShardStrategy {
     @Override
     public ShardResult map(ShardStrategyContext context) {
         String re = routeTable(context.getTable(), context.getColumnValue());
-        return re == null ? null : new ShardResult(re);
+        return re == null ? null : ShardResult.ofTable(re);
     }
 
     public String routeTable(String table, Object col) throws ShardException {

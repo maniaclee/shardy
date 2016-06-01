@@ -9,7 +9,7 @@ import java.util.concurrent.Executor;
  * Created by peng on 16/6/1.
  */
 public class WrapConnection implements Connection {
-    private static final String errorMsg = "unsupported sql execution";
+    static final String errorMsg = "unsupported sql execution";
 
     @Override
     public Statement createStatement() throws SQLException {
